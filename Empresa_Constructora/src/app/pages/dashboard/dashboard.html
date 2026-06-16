@@ -1,0 +1,82 @@
+<div class="dashboard-container">
+
+  <!-- SIDEBAR -->
+
+  <aside class="sidebar">
+
+    <div class="logo">
+
+      <h2>ConstructPro</h2>
+
+      <p class="company-name">{{ nombreEmpresa || 'Panel Administrativo' }}</p>
+
+    </div>
+
+    <nav>
+
+      <ul>
+
+        <li routerLink="/dashboard">
+          📊 Dashboard
+        </li>
+
+        <li *ngIf="!esAdminGeneral" routerLink="/dashboard/clientes">
+          👥 Clientes
+        </li>
+
+        <li *ngIf="!esAdminGeneral" routerLink="/dashboard/presupuesto">
+          💲 Presupuesto
+        </li>
+
+        <li *ngIf="!esAdminGeneral" routerLink="/dashboard/proyectos">
+          🛠️ Proyectos
+        </li>
+
+        <li *ngIf="!esAdminGeneral" routerLink="/dashboard/rrhh">
+          👨‍💼 RRHH
+        </li>
+
+        <li *ngIf="!esAdminGeneral" routerLink="/dashboard/compras">
+          🛒 Compras
+        </li>
+
+        <li *ngIf="!esAdminGeneral" routerLink="/dashboard/inventario">
+          📦 Inventario
+        </li>
+
+        <li *ngIf="!esAdminGeneral" routerLink="/dashboard/reportes">
+          📑 Reportes
+        </li>
+
+        <li *ngIf="!esAdminGeneral" routerLink="/dashboard/chatbot">
+          🤖 Chatbot
+        </li>
+        <li *ngIf="!esAdminGeneral" routerLink="/dashboard/avances">
+          📈 Avances Proyecto
+        </li>
+        <li *ngIf="!esAdminGeneral" routerLink="/dashboard/documentos">
+          📁 Documentos
+        </li>
+
+        <li
+          class="logout"
+          (click)="cerrarSesion()"
+        >
+          🚪 Cerrar Sesión
+        </li>
+
+      </ul>
+
+    </nav>
+
+  </aside>
+
+  <!-- CONTENIDO DINAMICO -->
+
+  <main class="main-content">
+
+    <router-outlet></router-outlet>
+
+  </main>
+
+</div>

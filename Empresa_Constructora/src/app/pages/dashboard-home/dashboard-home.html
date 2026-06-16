@@ -1,0 +1,93 @@
+<h1>Dashboard</h1>
+
+<p class="subtitle">
+  Vista general de la constructora
+</p>
+
+<!-- TARJETAS -->
+
+<div class="stats-grid">
+
+  <div class="stat-card">
+
+    <div class="icon green">
+      $
+    </div>
+
+    <h2>${{ totalVentas | number:'1.0-2' }}</h2>
+
+    <p>Ventas del Mes</p>
+
+  </div>
+
+  <div class="stat-card">
+
+    <div class="icon blue">
+      🏢
+    </div>
+
+    <h2>{{ cantObras }}</h2>
+
+    <p>Obras Activas</p>
+
+  </div>
+
+  <div class="stat-card">
+
+    <div class="icon purple">
+      👥
+    </div>
+
+    <h2>{{ cantClientes }}</h2>
+
+    <p>Clientes</p>
+
+  </div>
+
+  <div class="stat-card">
+
+    <div class="icon orange">
+      !
+    </div>
+
+    <h2>{{ cantAlertas }}</h2>
+
+    <p>Alertas Pendientes</p>
+
+  </div>
+
+</div>
+
+<!-- GRAFICAS -->
+
+<div class="charts-container">
+
+  <!-- GRAFICA LINEAL -->
+
+  <div class="chart-card">
+
+    <h3>Ventas Mensuales</h3>
+
+    <canvas
+      baseChart
+      [data]="lineChartData"
+      [type]="lineChartType">
+    </canvas>
+
+  </div>
+
+  <!-- GRAFICA PIE -->
+
+  <div class="chart-card">
+
+    <h3>Proyectos por Estado</h3>
+
+    <canvas
+      baseChart
+      [data]="pieChartData"
+      [type]="pieChartType">
+    </canvas>
+
+  </div>
+
+</div>

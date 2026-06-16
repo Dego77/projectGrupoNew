@@ -1,0 +1,129 @@
+<div class="documentos-container">
+
+  <h1>📁 Gestión de Documentos</h1>
+
+  <div class="formulario">
+
+    <select [(ngModel)]="documento.id_proyecto">
+
+      <option value="">
+        Seleccione un proyecto
+      </option>
+
+      <option
+        *ngFor="let proyecto of proyectos"
+        [value]="proyecto.id_proyecto">
+
+        {{ proyecto.nombre }}
+
+      </option>
+
+    </select>
+
+    <input
+      type="text"
+      [(ngModel)]="documento.nombre"
+      placeholder="Nombre documento"
+    >
+
+    <input
+      type="text"
+      [(ngModel)]="documento.tipo"
+      placeholder="Tipo (Plano, Contrato, Presupuesto, Informe...)"
+    >
+
+    <input
+      type="text"
+      [(ngModel)]="documento.formato"
+      placeholder="Formato (PDF, DOCX, XLSX...)"
+    >
+
+    <input
+      type="text"
+      [(ngModel)]="documento.tamano"
+      placeholder="Tamaño (2.5 MB)"
+    >
+
+    <input
+      type="file"
+      (change)="seleccionarArchivo($event)"
+    >
+
+    <button (click)="registrarDocumento()">
+      ➕ Registrar Documento
+    </button>
+
+  </div>
+
+  <input
+    class="buscador"
+    type="text"
+    [(ngModel)]="filtro"
+    placeholder="Buscar documentos..."
+  >
+
+  <h2>Documentos Registrados</h2>
+
+  <div class="grid-documentos">
+
+    <div
+      class="card"
+      *ngFor="let doc of documentosFiltrados"
+    >
+
+      <h3>{{ doc.nombre }}</h3>
+
+      <p>
+        <b>ID Proyecto:</b>
+        {{ doc.id_proyecto }}
+      </p>
+
+      <p>
+        <b>Tipo:</b>
+        {{ doc.tipo }}
+      </p>
+
+      <p>
+        <b>Formato:</b>
+        {{ doc.formato }}
+      </p>
+
+      <p>
+        <b>Tamaño:</b>
+        {{ doc.tamano }}
+      </p>
+
+      <p>
+        <b>Fecha:</b>
+        {{ doc.fecha_subida }}
+      </p>
+
+      <div class="acciones">
+
+        <a
+          [href]="'http://localhost:8000/' + doc.archivo_url"
+          target="_blank"
+        >
+          👁 Ver
+        </a>
+
+        <a
+          [href]="'http://localhost:8000/' + doc.archivo_url"
+          download
+        >
+          ⬇ Descargar
+        </a>
+
+        <button
+          (click)="eliminarDocumento(doc.id_documento)"
+        >
+          🗑 Eliminar
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

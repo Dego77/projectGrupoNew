@@ -1,0 +1,457 @@
+import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:app_constructora/core/constants/api_constants.dart';
+import 'package:app_constructora/core/config/environment.dart';
+import '../services/auth_service.dart';
+import '../services/cotizacion_service.dart';
+
+class UserProvider extends ChangeNotifier {
+  bool _hasActiveProject = false;
+  bool _pendingReservation = false;
+  double _globalProgress = 15.0;
+  double _budgetTotal = 185000.0;
+  String _userName = 'Carlos Martínez';
+  String _userEmail = 'carlos.m@example.com';
+  bool _isLoading = false;
+  final AuthService _authService = AuthService();
+  final CotizacionService _cotizacionService = CotizacionService();
+
+  int? _idCotizacionCreada;
+  bool _tieneProyectoReal = false;
+  Map<String, dynamic>? _proyectoRealData;
+  Map<String, dynamic>? _cotizacionProyectoReal;
+  List<dynamic> _pagosReales = [];
+  double _montoPagadoReal = 0.0;
+  double _montoPendienteReal = 0.0;
+  int? _idProyectoSeleccionado;
+  List<dynamic> _misProyectosReales = [];
+
+  bool get hasActiveProject => _hasActiveProject;
+  int? get idProyectoSeleccionado => _idProyectoSeleccionado;
+  List<dynamic> get misProyectosReales => _misProyectosReales;
+  bool get pendingReservation => _pendingReservation;
+  double get globalProgress => _globalProgress;
+  double get budgetTotal => _budgetTotal;
+  String get userName => _userName;
+  String get userEmail => _userEmail;
+  bool get isLoading => _isLoading;
+
+  int? get idCotizacionCreada => _idCotizacionCreada;
+  bool get tieneProyectoReal => _tieneProyectoReal;
+  Map<String, dynamic>? get proyectoRealData => _proyectoRealData;
+  Map<String, dynamic>? get cotizacionProyectoReal => _cotizacionProyectoReal;
+  List<dynamic> get pagosReales => _pagosReales;
+  double get montoPagadoReal => _montoPagadoReal;
+  double get montoPendienteReal => _montoPendienteReal;
+
+  // Actualizar datos del usuario
+  void setUserData(String name, String email) {
+    if (name.isNotEmpty) _userName = name;
+    if (email.isNotEmpty) _userEmail = email;
+    notifyListeners();
+  }
+
+  // Registro con API real (Actualizado)
+  Future<bool> register({
+    required String name,
+    required String email,
+    required String password,
+    required String telefono,
+    required String direccion,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await _authService.register(
+        nombreCompleto: name,
+        email: email,
+        password: password,
+        telefono: telefono,
+        direccion: direccion,
+      );
+      
+      _userName = response['user']?['name'] ?? name;
+      _userEmail = response['user']?['email'] ?? email;
+      _hasActiveProject = false;
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+  
+  // Login con API real
+  Future<bool> login(String email, String password) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await _authService.login(email, password);
+      
+      // Suponiendo que la API devuelve un objeto con 'name', 'email', etc.
+      _userName = response['user']['name'] ?? 'Usuario';
+      _userEmail = response['user']['email'] ?? email;
+      _hasActiveProject = response['user']['hasActiveProject'] ?? false;
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      rethrow; // Lanzar para que la UI pueda mostrar el error
+    }
+  }
+
+  // Login como usuario existente (Simulado/Mock actualizado)
+  Future<void> loginAsActiveUser() async {
+    _isLoading = true;
+    notifyListeners();
+
+    await Future.delayed(const Duration(seconds: 1)); // Simular latencia
+
+    _hasActiveProject = true;
+    _pendingReservation = false;
+    _globalProgress = 30.0;
+    
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // Login como usuario nuevo (Simulado/Mock actualizado)
+  Future<void> loginAsNewUser() async {
+    _isLoading = true;
+    notifyListeners();
+
+    await Future.delayed(const Duration(seconds: 1)); // Simular latencia
+
+    _hasActiveProject = false;
+    _pendingReservation = false;
+    _globalProgress = 0.0;
+    
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // Aceptar presupuesto manual
+  void acceptBudget(double totalAcordado) {
+    _budgetTotal = totalAcordado;
+    _pendingReservation = true;
+    notifyListeners();
+  }
+
+  // Guardar cotización en la base de datos real
+  Future<void> saveCotizacion({
+    String? nombre,
+    required String ubicacion,
+    required int m2Terreno,
+    required int m2Construir,
+    required int habitaciones,
+    required int banos,
+    required String calidadMateriales,
+    required List<String> ambientes,
+    required String adicionales,
+    required double costoEstimado,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final cotizacion = CotizacionModel(
+        nombre: nombre,
+        ubicacion: ubicacion,
+        m2Terreno: m2Terreno,
+        m2Construir: m2Construir,
+        habitaciones: habitaciones,
+        banos: banos,
+        calidadMateriales: calidadMateriales,
+        ambientes: ambientes,
+        adicionales: adicionales.isNotEmpty ? adicionales : null,
+        costoEstimado: costoEstimado,
+        estado: 'Pendiente',
+      );
+
+      final saved = await _cotizacionService.guardarCotizacion(cotizacion);
+      _idCotizacionCreada = saved.idCotizacion;
+      _budgetTotal = costoEstimado;
+      _pendingReservation = false;
+
+      // Solicitar el proyecto automáticamente al enviar
+      if (_idCotizacionCreada != null) {
+        await solicitarProyecto(_idCotizacionCreada!);
+      } else {
+        _isLoading = false;
+        notifyListeners();
+      }
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> solicitarProyecto(int idCotizacion) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final url = Uri.parse('${ApiConstants.baseUrl}/casos-uso/hu33/proyectos/solicitar');
+      final prefs = await SharedPreferences.getInstance();
+      final int idUsuario = prefs.getInt('id_usuario') ?? 1;
+      final int idEmpresa = prefs.getInt('id_empresa') ?? int.parse(Environment.empresaId);
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Empresa-Id': idEmpresa.toString(),
+          'X-Usuario-Id': idUsuario.toString(),
+        },
+        body: json.encode({
+          'id_cotizacion': idCotizacion,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _idCotizacionCreada = null;
+        _pendingReservation = false;
+        await cargarProyectoYPagos();
+      } else {
+        final decoded = json.decode(response.body);
+        throw Exception(decoded['detail'] ?? 'Error al solicitar el proyecto.');
+      }
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> verificarCotizacionPendiente() async {
+    try {
+      final cotizaciones = await _cotizacionService.obtenerMisCotizaciones();
+      final pendientes = cotizaciones.where((c) => c.estado == 'Pendiente').toList();
+      if (pendientes.isNotEmpty) {
+        _idCotizacionCreada = pendientes.first.idCotizacion;
+        _budgetTotal = pendientes.first.costoEstimado;
+        if (_idCotizacionCreada != null) {
+          await solicitarProyecto(_idCotizacionCreada!);
+        }
+      }
+    } catch (e) {
+      print('Error al verificar cotizaciones pendientes: $e');
+    }
+  }
+
+  Future<void> cargarProyectoYPagos() async {
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final int idUsuario = prefs.getInt('id_usuario') ?? 1;
+      final int idEmpresa = prefs.getInt('id_empresa') ?? int.parse(Environment.empresaId);
+
+      // 1. Obtener listado de todos los proyectos del cliente
+      final listUrl = Uri.parse('${ApiConstants.baseUrl}/casos-uso/hu33/cliente/proyectos');
+      final listResponse = await http.get(
+        listUrl,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Empresa-Id': idEmpresa.toString(),
+          'X-Usuario-Id': idUsuario.toString(),
+        },
+      );
+
+      if (listResponse.statusCode == 200) {
+        final List decodedList = json.decode(listResponse.body);
+        _misProyectosReales = decodedList;
+
+        if (_misProyectosReales.isNotEmpty) {
+          final hasSelected = _misProyectosReales.any((p) => p['id_proyecto'] == _idProyectoSeleccionado);
+          if (_idProyectoSeleccionado == null || !hasSelected) {
+            _idProyectoSeleccionado = _misProyectosReales.first['id_proyecto'];
+          }
+        } else {
+          _idProyectoSeleccionado = null;
+        }
+      }
+
+      if (_idProyectoSeleccionado == null) {
+        _tieneProyectoReal = false;
+        _hasActiveProject = false;
+        _proyectoRealData = null;
+        _cotizacionProyectoReal = null;
+        _pagosReales = [];
+        _montoPagadoReal = 0.0;
+        _montoPendienteReal = 0.0;
+        return;
+      }
+
+      // 2. Obtener detalles del proyecto seleccionado
+      final detailsUrl = Uri.parse('${ApiConstants.baseUrl}/casos-uso/hu33/cliente/proyectos/$_idProyectoSeleccionado');
+      final response = await http.get(
+        detailsUrl,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Empresa-Id': idEmpresa.toString(),
+          'X-Usuario-Id': idUsuario.toString(),
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        _tieneProyectoReal = true;
+        _hasActiveProject = true;
+        _proyectoRealData = decoded['proyecto'];
+        _cotizacionProyectoReal = decoded['cotizacion'];
+        _pagosReales = decoded['pagos'] ?? [];
+        _montoPagadoReal = (decoded['total_pagado'] as num?)?.toDouble() ?? 0.0;
+        _montoPendienteReal = (decoded['total_pendiente'] as num?)?.toDouble() ?? 0.0;
+        _budgetTotal = (decoded['total_estimado'] as num?)?.toDouble() ?? (_montoPagadoReal + _montoPendienteReal);
+
+        if (_proyectoRealData != null) {
+          final num? prg = _proyectoRealData!['porcentaje_avance'];
+          if (prg != null) {
+            _globalProgress = prg.toDouble();
+          } else {
+            final String est = _proyectoRealData!['estado'] ?? 'En planificación';
+            if (est == 'Finalizado') {
+              _globalProgress = 100.0;
+            } else if (est == 'En planificación' || est == 'Pendiente') {
+              _globalProgress = 0.0;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Error al cargar proyecto y pagos: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> seleccionarProyecto(int idProyecto) async {
+    _idProyectoSeleccionado = idProyecto;
+    notifyListeners();
+    await cargarProyectoYPagos();
+  }
+
+  Future<void> comenzarProyectoConPlan(String tipoPlan, int cantidadCuotas) async {
+    if (_idProyectoSeleccionado == null) {
+      throw Exception('No hay ningún proyecto activo o seleccionado.');
+    }
+    
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      final url = Uri.parse('${ApiConstants.baseUrl}/casos-uso/hu33/proyectos/$_idProyectoSeleccionado/establecer-plan');
+      final prefs = await SharedPreferences.getInstance();
+      final int idUsuario = prefs.getInt('id_usuario') ?? 1;
+      final int idEmpresa = prefs.getInt('id_empresa') ?? int.parse(Environment.empresaId);
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Empresa-Id': idEmpresa.toString(),
+          'X-Usuario-Id': idUsuario.toString(),
+        },
+        body: json.encode({
+          'tipo_plan': tipoPlan,
+          'cantidad_cuotas': cantidadCuotas,
+        }),
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _pendingReservation = false;
+        await cargarProyectoYPagos();
+      } else {
+        final decoded = json.decode(response.body);
+        throw Exception(decoded['detail'] ?? 'Error al establecer el plan de pagos.');
+      }
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> pagarCuota(int idPago) async {
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      final url = Uri.parse('${ApiConstants.baseUrl}/casos-uso/hu33/pagos/$idPago/pagar');
+      final prefs = await SharedPreferences.getInstance();
+      final int idUsuario = prefs.getInt('id_usuario') ?? 1;
+      final int idEmpresa = prefs.getInt('id_empresa') ?? int.parse(Environment.empresaId);
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Empresa-Id': idEmpresa.toString(),
+          'X-Usuario-Id': idUsuario.toString(),
+        },
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        await cargarProyectoYPagos();
+      } else {
+        final decoded = json.decode(response.body);
+        throw Exception(decoded['detail'] ?? 'Error al procesar el pago de la cuota.');
+      }
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  // Simular pago de reserva exitoso
+  void payReservation() {
+    _pendingReservation = false;
+    _hasActiveProject = true;
+    _globalProgress = 0.0; // Inicia la obra con 0% de progreso lógicamente
+    notifyListeners();
+  }
+
+  // Setter de progreso dinámico para reflejarse en Home y Mi Obra
+  void setProgress(double val) {
+    _globalProgress = val;
+    notifyListeners();
+  }
+
+  // Cerrar sesión
+  Future<void> logout() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // 1. Notificar al backend y borrar SharedPreferences local
+      await _authService.logout();
+    } catch (e) {
+      print("Error al cerrar sesión: $e");
+    } finally {
+      // 2. Limpiar el estado de las variables locales en memoria de la App
+      _hasActiveProject = false;
+      _pendingReservation = false;
+      _globalProgress = 15.0; // Resetear a valor inicial
+      _userName = 'Usuario Desconectado';
+      _userEmail = '';
+      _proyectoRealData = null;
+      _cotizacionProyectoReal = null;
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+}

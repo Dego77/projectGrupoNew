@@ -1,0 +1,102 @@
+<div class="clientes-container">
+
+  <!-- FORMULARIO -->
+
+  <div class="card">
+
+    <h1>Registro de Clientes</h1>
+
+    <div class="form-group">
+
+      <label>Nombre</label>
+
+      <input
+        type="text"
+        [(ngModel)]="cliente.nombre"
+      >
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Teléfono</label>
+
+      <input
+        type="text"
+        [(ngModel)]="cliente.telefono"
+      >
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Dirección</label>
+
+      <input
+        type="text"
+        [(ngModel)]="cliente.direccion"
+      >
+
+    </div>
+
+    <button
+      (click)="registrarCliente()"
+    >
+      Registrar Cliente
+    </button>
+
+  </div>
+
+  <!-- TABLA CLIENTES -->
+
+  <div class="tabla-clientes">
+
+    <h2>Lista de Clientes</h2>
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Teléfono</th>
+          <th>Dirección</th>
+          <th>Acciones</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        <tr *ngFor="let c of clientes">
+
+          <td>{{ c.id_cliente }}</td>
+          <td>{{ c.nombre }}</td>
+          <td>{{ c.telefono }}</td>
+          <td>{{ c.direccion }}</td>
+
+          <td class="acciones">
+
+            
+
+            <button
+              class="eliminar"
+              (click)="eliminarCliente(c.id_cliente)"
+            >
+              🗑️
+            </button>
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

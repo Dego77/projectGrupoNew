@@ -1,0 +1,199 @@
+<div class="compras-container">
+
+  <!-- PROVEEDOR -->
+
+  <div class="card">
+
+    <h2>Registrar Proveedor</h2>
+
+    <div class="form-group">
+
+      <label>Nombre</label>
+
+      <input
+        type="text"
+        [(ngModel)]="proveedor.nombre"
+      >
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Contacto</label>
+
+      <input
+        type="text"
+        [(ngModel)]="proveedor.contacto"
+      >
+
+    </div>
+
+    <button (click)="registrarProveedor()">
+      Registrar Proveedor
+    </button>
+
+  </div>
+
+  <!-- COMPRA -->
+
+  <div class="card">
+
+    <h2>Registrar Compra</h2>
+
+    <div class="form-group">
+
+      <label>Proveedor</label>
+
+      <select [(ngModel)]="compra.id_proveedor">
+
+        <option
+          *ngFor="let p of proveedores"
+          [value]="p.id_proveedor"
+        >
+          {{ p.nombre }}
+        </option>
+
+      </select>
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Fecha</label>
+
+      <input
+        type="date"
+        [(ngModel)]="compra.fecha"
+      >
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Total</label>
+
+      <input
+        type="number"
+        [(ngModel)]="compra.total"
+      >
+
+    </div>
+
+    <button (click)="registrarCompra()">
+      Registrar Compra
+    </button>
+
+  </div>
+<!-- MATERIAL -->
+
+<div class="card">
+
+  <h2>Registrar Material</h2>
+
+  <div class="form-group">
+
+    <label>Nombre</label>
+
+    <input
+      type="text"
+      [(ngModel)]="material.nombre"
+    >
+
+  </div>
+
+  <div class="form-group">
+
+    <label>Precio</label>
+
+    <input
+      type="number"
+      [(ngModel)]="material.precio"
+    >
+
+  </div>
+
+  <div class="form-group">
+
+    <label>Stock</label>
+
+    <input
+      type="number"
+      [(ngModel)]="material.stock"
+    >
+
+  </div>
+
+  <button (click)="registrarMaterial()">
+    Registrar Material
+  </button>
+
+</div>
+  <!-- DETALLE COMPRA -->
+
+  <div class="card">
+
+    <h2>Detalle Compra</h2>
+
+    <div class="form-group">
+
+      <label>Compra</label>
+
+      <select [(ngModel)]="detalle.id_compra">
+
+        <option
+          *ngFor="let c of compras"
+          [value]="c.id_compra"
+        >
+          Compra #{{ c.id_compra }}
+        </option>
+
+      </select>
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Material</label>
+
+      <select [(ngModel)]="detalle.id_material">
+
+        <option
+          *ngFor="let m of materiales"
+          [value]="m.id_material"
+        >
+          {{ m.nombre }}
+        </option>
+
+      </select>
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Cantidad</label>
+
+      <input
+        type="number"
+        [(ngModel)]="detalle.cantidad"
+      >
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Precio</label>
+
+      <input
+        type="number"
+        [(ngModel)]="detalle.precio"
+      >
+
+    </div>
+
+    <button (click)="registrarDetalleCompra()">
+      Registrar Detalle
+    </button>
+
+  </div>
+
+</div>

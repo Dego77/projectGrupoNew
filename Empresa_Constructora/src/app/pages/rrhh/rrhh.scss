@@ -1,0 +1,80 @@
+.rrhh-container{
+  width: 100%;
+}
+
+.card,
+.tabla-empleados{
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+h1{
+  color: #0b2c6b;
+  margin-bottom: 30px;
+}
+
+.form-group{
+  margin-bottom: 20px;
+}
+
+.form-group label{
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.form-group input{
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+button{
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  background: #ff6b3d;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+table{
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead{
+  background: #091638;
+  color: white;
+}
+
+th,
+td{
+  padding: 15px;
+  text-align: left;
+}
+
+tbody tr{
+  border-bottom: 1px solid #ddd;
+}
+
+.acciones{
+  display: flex;
+  gap: 10px;
+}
+
+.editar{
+  background: #ffc107;
+  width: 45px;
+}
+
+.eliminar{
+  background: #dc3545;
+  width: 45px;
+}

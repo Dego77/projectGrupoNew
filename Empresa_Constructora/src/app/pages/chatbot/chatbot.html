@@ -1,0 +1,56 @@
+<div class="chatbot-container">
+
+  <div class="chat-card">
+
+    <h1>🤖 Asistente IA ConstructPro</h1>
+
+    <div class="chat-box" #chatBox>
+
+      <div
+        *ngFor="let m of mensajes"
+        class="mensaje"
+        [ngClass]="m.tipo"
+      >
+
+        {{ m.texto }}
+
+      </div>
+
+      <div
+        *ngIf="cargando"
+        class="mensaje ia"
+      >
+        Escribiendo...
+      </div>
+
+    </div>
+
+    <div class="input-area">
+
+      <input
+        type="text"
+        [(ngModel)]="pregunta"
+        placeholder="Escribe tu pregunta..."
+        (keyup.enter)="enviarPregunta()"
+        [disabled]="cargando"
+      >
+
+      <button
+        (click)="enviarPregunta()"
+        [disabled]="cargando"
+      >
+        Enviar
+      </button>
+        <button (click)="iniciarGrabacion()" [disabled]="cargando">
+    🎤 Grabar
+  </button>
+
+  <button (click)="detenerGrabacion()" [disabled]="cargando">
+    ⏹️ Detener
+  </button>
+
+    </div>
+
+  </div>
+
+</div>

@@ -1,0 +1,86 @@
+<div class="inventario-container">
+
+  <h1>📦 Gestión de Inventario</h1>
+
+  <div class="cards">
+
+    <div class="card danger">
+      <h3>Stock Crítico</h3>
+      <p>{{ stockCritico }} materiales</p>
+    </div>
+
+    <div class="card warning">
+      <h3>Stock Bajo</h3>
+      <p>{{ stockBajo }} materiales</p>
+    </div>
+
+    <div class="card success">
+      <h3>Total Materiales</h3>
+      <p>{{ materiales.length }}</p>
+    </div>
+
+  </div>
+
+  <input
+    type="text"
+    [(ngModel)]="filtro"
+    (input)="filtrarMateriales()"
+    placeholder="Buscar materiales..."
+    class="buscador"
+  >
+
+  <table>
+
+    <thead>
+
+      <tr>
+        <th>ID</th>
+        <th>Material</th>
+        <th>Precio</th>
+        <th>Stock</th>
+        <th>Estado</th>
+      </tr>
+
+    </thead>
+
+    <tbody>
+
+      <tr *ngFor="let material of materialesFiltrados">
+
+        <td>{{ material.id_material }}</td>
+
+        <td>{{ material.nombre }}</td>
+
+        <td>Bs {{ material.precio }}</td>
+
+        <td>{{ material.stock }}</td>
+
+        <td>
+
+          <span
+            class="estado"
+            [ngClass]="{
+              'critico': obtenerEstado(material.stock) === 'Crítico',
+              'bajo': obtenerEstado(material.stock) === 'Bajo',
+              'normal': obtenerEstado(material.stock) === 'Normal'
+            }">
+
+            {{ obtenerEstado(material.stock) }}
+
+          </span>
+
+        </td>
+
+      </tr>
+
+      <tr *ngIf="materialesFiltrados.length === 0">
+        <td colspan="5" style="text-align:center;">
+          No se encontraron materiales
+        </td>
+      </tr>
+
+    </tbody>
+
+  </table>
+
+</div>

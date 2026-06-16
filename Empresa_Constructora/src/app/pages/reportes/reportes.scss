@@ -1,0 +1,96 @@
+.reportes-container{
+
+  padding: 30px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 25px;
+
+}
+
+.reporte-card{
+
+  background: white;
+
+  padding: 25px;
+
+  border-radius: 18px;
+
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+
+}
+
+h2{
+
+  color: #0b2c6b;
+
+  margin-bottom: 20px;
+
+}
+
+.acciones{
+
+  display: flex;
+
+  gap: 10px;
+
+  margin-bottom: 20px;
+
+}
+
+button{
+
+  border: none;
+
+  padding: 10px 18px;
+
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  color: white;
+
+  font-weight: bold;
+
+}
+
+.pdf{
+
+  background: #e53935;
+
+}
+
+.excel{
+
+  background: #2e7d32;
+
+}
+
+table{
+
+  width: 100%;
+
+  border-collapse: collapse;
+
+}
+
+thead{
+
+  background: #071739;
+
+  color: white;
+
+}
+
+th,
+td{
+
+  padding: 15px;
+
+  border-bottom: 1px solid #ddd;
+
+  text-align: left;
+
+}

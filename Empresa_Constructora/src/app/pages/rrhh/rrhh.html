@@ -1,0 +1,120 @@
+<div class="rrhh-container">
+
+  <!-- FORMULARIO -->
+
+  <div class="card">
+
+    <h1>Registro de Empleados</h1>
+
+    <div class="form-group">
+
+      <label>Nombre</label>
+
+      <input
+        type="text"
+        [(ngModel)]="empleado.nombre"
+      >
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Cargo</label>
+
+      <input
+        type="text"
+        [(ngModel)]="empleado.cargo"
+      >
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Salario</label>
+
+      <input
+        type="number"
+        [(ngModel)]="empleado.salario"
+      >
+
+    </div>
+
+    <div class="form-group">
+
+      <label>Teléfono</label>
+
+      <input
+        type="text"
+        [(ngModel)]="empleado.telefono"
+      >
+
+    </div>
+
+    <button
+      (click)="registrarEmpleado()"
+    >
+      Registrar Empleado
+    </button>
+
+  </div>
+
+  <!-- TABLA -->
+
+  <div class="tabla-empleados">
+
+    <h2>Lista de Empleados</h2>
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Cargo</th>
+          <th>Salario</th>
+          <th>Teléfono</th>
+          <th>Acciones</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        <tr *ngFor="let e of empleados">
+
+          <td>{{ e.id_empleados }}</td>
+          <td>{{ e.nombre }}</td>
+          <td>{{ e.cargo }}</td>
+          <td>{{ e.salario }}</td>
+          <td>{{ e.telefono }}</td>
+
+          <td class="acciones">
+
+            <button
+              class="editar"
+              (click)="editarEmpleado(e)"
+            >
+              ✏️
+            </button>
+
+            <button
+              class="eliminar"
+              (click)="eliminarEmpleado(e.id_empleados)"
+            >
+              🗑️
+            </button>
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

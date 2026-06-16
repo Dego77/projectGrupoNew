@@ -1,0 +1,153 @@
+<div class="reportes-container">
+
+  <!-- CLIENTES -->
+
+  <div class="reporte-card">
+
+    <h2>Reporte de Clientes</h2>
+
+    <div class="acciones">
+
+      <button class="pdf">
+        PDF
+      </button>
+
+      <button class="excel">
+        Excel
+      </button>
+
+    </div>
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Teléfono</th>
+          <th>Dirección</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        <tr *ngFor="let c of clientes">
+
+          <td>{{ c.id_cliente }}</td>
+          <td>{{ c.nombre }}</td>
+          <td>{{ c.telefono }}</td>
+          <td>{{ c.direccion }}</td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+  <!-- PROYECTOS -->
+
+  <div class="reporte-card">
+
+    <h2>Reporte de Proyectos</h2>
+
+    <div class="acciones">
+
+      <button class="pdf">
+        PDF
+      </button>
+
+      <button class="excel">
+        Excel
+      </button>
+
+    </div>
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Ubicación</th>
+          <th>Estado</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        <tr *ngFor="let p of proyectos">
+
+          <td>{{ p.id_proyecto }}</td>
+          <td>{{ p.nombre }}</td>
+          <td>{{ p.ubicacion }}</td>
+          <td>{{ p.estado }}</td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+  <!-- MATERIALES -->
+
+  <div class="reporte-card">
+
+    <h2>Reporte de Materiales</h2>
+
+    <div class="acciones">
+
+      <button class="pdf">
+        PDF
+      </button>
+
+      <button class="excel">
+        Excel
+      </button>
+
+    </div>
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Precio</th>
+          <th>Stock</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        <tr *ngFor="let m of materiales">
+
+          <td>{{ m.id_material }}</td>
+          <td>{{ m.nombre }}</td>
+          <td>{{ m.precio }}</td>
+          <td>{{ m.stock }}</td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

@@ -1,0 +1,71 @@
+.subtitle{
+  color: #555;
+  margin-bottom: 30px;
+}
+
+.stats-grid{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card{
+  background: white;
+  padding: 25px;
+  border-radius: 20px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+.icon{
+  width: 55px;
+  height: 55px;
+  border-radius: 15px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+  font-size: 24px;
+
+  margin-bottom: 20px;
+}
+
+.green{
+  background: #22c55e;
+}
+
+.blue{
+  background: #3b82f6;
+}
+
+.purple{
+  background: #a855f7;
+}
+
+.orange{
+  background: #f97316;
+}
+
+.charts-container{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+}
+
+.chart-card{
+  background: white;
+  padding: 25px;
+  border-radius: 20px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+.chart-card h3{
+  margin-bottom: 20px;
+}
+
+canvas{
+  width: 100% !important;
+  height: 350px !important;
+}

@@ -1,0 +1,76 @@
+.inventario-container{
+  padding: 25px;
+}
+
+.cards{
+  display:flex;
+  gap:20px;
+  margin:20px 0;
+}
+
+.card{
+  flex:1;
+  padding:20px;
+  border-radius:12px;
+  color:white;
+}
+
+.danger{
+  background:#dc3545;
+}
+
+.warning{
+  background:#ffc107;
+  color:black;
+}
+
+.success{
+  background:#198754;
+}
+
+.buscador{
+  width:100%;
+  padding:12px;
+  margin-bottom:20px;
+  border-radius:8px;
+  border:1px solid #ccc;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+}
+
+th{
+  background:#0d6efd;
+  color:white;
+  padding:12px;
+}
+
+td{
+  padding:12px;
+  border-bottom:1px solid #ddd;
+}
+
+.estado{
+  padding:6px 12px;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:bold;
+}
+
+.critico{
+  background:#f8d7da;
+  color:#dc3545;
+}
+
+.bajo{
+  background:#fff3cd;
+  color:#856404;
+}
+
+.normal{
+  background:#d1e7dd;
+  color:#198754;
+}

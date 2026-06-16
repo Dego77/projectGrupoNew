@@ -1,0 +1,96 @@
+<div class="contenedor">
+
+  <h1>📈 Registro de Avances</h1>
+
+  <div class="formulario">
+
+    <select [(ngModel)]="avance.id_proyecto">
+
+      <option value="">
+        Seleccionar Proyecto
+      </option>
+
+      <option
+        *ngFor="let proyecto of proyectos"
+        [value]="proyecto.id_proyecto">
+
+        {{ proyecto.nombre }}
+
+      </option>
+
+    </select>
+
+    <input
+      type="text"
+      placeholder="Título"
+      [(ngModel)]="avance.titulo">
+
+    <textarea
+      placeholder="Descripción"
+      [(ngModel)]="avance.descripcion">
+    </textarea>
+
+    <input
+      type="text"
+      placeholder="Responsable"
+      [(ngModel)]="avance.responsable">
+
+    <label>
+
+      Avance: {{ avance.porcentaje_avance }}%
+
+    </label>
+
+    <input
+      type="range"
+      min="0"
+      max="100"
+      [(ngModel)]="avance.porcentaje_avance">
+
+    <button
+      (click)="registrarAvance()">
+
+      Registrar Avance
+
+    </button>
+
+  </div>
+
+  <hr>
+
+  <h2>Historial de Avances</h2>
+
+  <div
+    class="avance-card"
+    *ngFor="let item of avances">
+
+    <h3>{{ item.titulo }}</h3>
+
+    <p>{{ item.descripcion }}</p>
+
+    <p>
+
+      Responsable:
+      <strong>{{ item.responsable }}</strong>
+
+    </p>
+
+    <div class="barra">
+
+      <div
+        class="progreso"
+        [style.width.%]="item.porcentaje_avance">
+
+      </div>
+
+    </div>
+
+    <p>
+
+      {{ item.porcentaje_avance }}%
+
+    </p>
+
+  </div>
+
+</div>

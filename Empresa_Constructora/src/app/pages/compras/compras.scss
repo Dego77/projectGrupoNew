@@ -1,0 +1,82 @@
+.compras-container{
+
+  padding: 30px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+
+}
+
+.card{
+
+  background: white;
+
+  padding: 25px;
+
+  border-radius: 18px;
+
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+
+}
+
+h2{
+
+  margin-bottom: 20px;
+
+  color: #0b2c6b;
+
+}
+
+.form-group{
+
+  display: flex;
+
+  flex-direction: column;
+
+  margin-bottom: 15px;
+
+}
+
+label{
+
+  margin-bottom: 8px;
+
+  font-weight: 600;
+
+}
+
+input,
+select{
+
+  padding: 12px;
+
+  border-radius: 10px;
+
+  border: 1px solid #ccc;
+
+  font-size: 15px;
+
+}
+
+button{
+
+  width: 100%;
+
+  padding: 14px;
+
+  border: none;
+
+  border-radius: 12px;
+
+  background: #ff6b3d;
+
+  color: white;
+
+  font-size: 16px;
+
+  cursor: pointer;
+
+  margin-top: 10px;
+
+}
