@@ -65,7 +65,92 @@ class AuthService {
     }
   }
 
-  // Registro con la API real de FastAPI y la BD local
+  // Login global en la BD central para obtener la lista de empresas
+  Future<Map<String, dynamic>> loginGlobal(String email, String password) async {
+    final url = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.loginGlobal}');
+    
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': email,
+          'contrasena': password,
+        }),
+      );
+
+      final decoded = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        return decoded; // {mensaje, email, nombres, apellido, empresas}
+      } else {
+        final detail = decoded['detail'];
+        String errorMsg = 'Error al iniciar sesión global.';
+        if (detail is String) {
+          errorMsg = detail;
+        }
+        throw Exception(errorMsg);
+      }
+    } catch (e) {
+      if (e is Exception) {
+        rethrow;
+      }
+      throw Exception('No se pudo conectar con el servidor: $e');
+    }
+  }
+
+  // Vincular y obtener sesión para la empresa seleccionada
+  Future<Map<String, dynamic>> seleccionarEmpresa(String email, int idEmpresa) async {
+    final url = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.seleccionarEmpresa}');
+    
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': email,
+          'id_empresa': idEmpresa,
+        }),
+      );
+
+      final decoded = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        // Guardar la sesión localmente en SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('id_usuario', decoded['id_usuario']);
+        await prefs.setInt('id_empresa', decoded['id_empresa']);
+        await prefs.setString('usuario', decoded['usuario']);
+        await prefs.setString('email', decoded['email']);
+        await prefs.setString('rol', decoded['rol']);
+        await prefs.setString('nombres', decoded['nombres']);
+        await prefs.setString('apellido', decoded['apellido']);
+
+        return {
+          'status': 'success',
+          'user': {
+            'name': '${decoded['nombres']} ${decoded['apellido']}'.trim(),
+            'email': decoded['email'],
+            'hasActiveProject': decoded['has_active_project'] ?? false,
+          },
+        };
+      } else {
+        final detail = decoded['detail'] ?? 'Error al seleccionar la empresa.';
+        throw Exception(detail);
+      }
+    } catch (e) {
+      if (e is Exception) {
+        rethrow;
+      }
+      throw Exception('No se pudo conectar con el servidor: $e');
+    }
+  }
+
+  // Registro global en la BD central sin header de empresa
   Future<Map<String, dynamic>> register({
     required String nombreCompleto,
     required String telefono,
@@ -73,7 +158,7 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    final url = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.register}');
+    final url = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.registerGlobal}');
     
     // Separar nombre completo en nombres y apellidos
     List<String> nameParts = nombreCompleto.trim().split(' ');
@@ -88,7 +173,6 @@ class AuthService {
         url,
         headers: {
           'Content-Type': 'application/json',
-          'X-Empresa-Id': Environment.empresaId, // Leído dinámicamente de la configuración
         },
         body: json.encode({
           'nombres': nombres,
@@ -110,7 +194,7 @@ class AuthService {
             'email': email,
             'telefono': telefono,
             'direccion': direccion,
-            'hasActiveProject': false, // Los usuarios nuevos inician sin obra activa
+            'hasActiveProject': false,
           },
         };
       } else {

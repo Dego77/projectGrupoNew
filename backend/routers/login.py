@@ -1,3 +1,5 @@
+from datetime import datetime
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
@@ -9,7 +11,7 @@ from database_empresa import (
     construir_database_url_empresa,
     obtener_engine_empresa,
 )
-from models import Empresa, BaseDeDatosEmpresa, Usuario, Rol
+from models import Empresa, BaseDeDatosEmpresa, Usuario, Rol, Cliente
 from utils.seguridad_roles import requerir_roles
 from utils.bitacora import registrar_bitacora
 
@@ -229,3 +231,253 @@ def cerrar_sesion(
         "id_usuario": usuario.id_usuarios,
         "usuario": usuario.nombresusuario,
     }
+
+
+# ============================================================
+# ENDPOINTS GLOBALES - REGISTRO Y LOGIN GLOBAL MULTIEMPRESA
+# ============================================================
+
+class RegistroGlobalRequest(BaseModel):
+    nombres: str = Field(..., min_length=1)
+    apellido: str = Field(..., min_length=1)
+    email: str = Field(..., min_length=5)
+    contrasena: str = Field(..., min_length=4)
+    telefono: Optional[str] = None
+    direccion: Optional[str] = None
+
+class RegistroGlobalResponse(BaseModel):
+    mensaje: str
+    email: str
+
+class LoginGlobalRequest(BaseModel):
+    email: str = Field(..., min_length=5)
+    contrasena: str = Field(..., min_length=4)
+
+class EmpresaItem(BaseModel):
+    id_empresa: int
+    nombre: str
+    email: str
+
+class LoginGlobalResponse(BaseModel):
+    mensaje: str
+    email: str
+    nombres: str
+    apellido: str
+    empresas: List[EmpresaItem]
+
+class SeleccionarEmpresaRequest(BaseModel):
+    email: str
+    id_empresa: int
+
+
+# Registrar usuario globalmente
+@router.post("/registro-global", response_model=RegistroGlobalResponse)
+def registro_global(
+    datos: RegistroGlobalRequest,
+    session_central: Session = Depends(get_session),
+):
+    email_normalizado = datos.email.strip().lower()
+
+    # Verificar si ya existe en la central
+    usuario_existente = session_central.exec(
+        select(Usuario).where(func.lower(Usuario.email) == email_normalizado)
+    ).first()
+
+    if usuario_existente:
+        raise HTTPException(
+            status_code=400,
+            detail="El correo electrónico ya está registrado."
+        )
+
+    # Crear el usuario en la BD central
+    nuevo_usuario = Usuario(
+        id_rol=2,  # Cliente por defecto
+        nombresusuario=email_normalizado.split('@')[0],
+        nombres=datos.nombres,
+        apellido=datos.apellido,
+        email=email_normalizado,
+        contrasena=datos.contrasena,
+        telefono=datos.telefono,
+        direccion=datos.direccion,
+    )
+
+    try:
+        session_central.add(nuevo_usuario)
+        session_central.commit()
+        session_central.refresh(nuevo_usuario)
+    except Exception as e:
+        session_central.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al registrar usuario: {str(e)}"
+        )
+
+    return {
+        "mensaje": "Usuario global registrado correctamente.",
+        "email": nuevo_usuario.email
+    }
+
+
+# Iniciar sesión global
+@router.post("/login-global", response_model=LoginGlobalResponse)
+def login_global(
+    datos: LoginGlobalRequest,
+    session_central: Session = Depends(get_session),
+):
+    email_normalizado = datos.email.strip().lower()
+
+    usuario = session_central.exec(
+        select(Usuario).where(func.lower(Usuario.email) == email_normalizado)
+    ).first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=401,
+            detail="Credenciales incorrectas."
+        )
+
+    if usuario.contrasena != datos.contrasena:
+        raise HTTPException(
+            status_code=401,
+            detail="Credenciales incorrectas."
+        )
+
+    # Obtener todas las empresas activas
+    empresas = session_central.exec(
+        select(Empresa).where(Empresa.estado == "Activo")
+    ).all()
+
+    lista_empresas = [
+        {
+            "id_empresa": emp.id_empresa,
+            "nombre": emp.nombre,
+            "email": emp.email
+        }
+        for emp in empresas
+    ]
+
+    return {
+        "mensaje": "Login global correcto.",
+        "email": usuario.email,
+        "nombres": usuario.nombres,
+        "apellido": usuario.apellido,
+        "empresas": lista_empresas
+    }
+
+
+# Vincular usuario a la empresa seleccionada y loguearlo
+@router.post("/seleccionar-empresa", response_model=LoginUsuarioResponse)
+def seleccionar_empresa(
+    datos: SeleccionarEmpresaRequest,
+    session_central: Session = Depends(get_session),
+):
+    # Buscar configuración de base de datos de la empresa elegida
+    config_bd = session_central.exec(
+        select(BaseDeDatosEmpresa).where(
+            BaseDeDatosEmpresa.id_empresa == datos.id_empresa,
+            BaseDeDatosEmpresa.estado == True,
+        )
+    ).first()
+
+    if not config_bd:
+        raise HTTPException(
+            status_code=404,
+            detail="No se encontró una base de datos activa para la empresa seleccionada."
+        )
+
+    # Buscar datos del usuario global
+    usuario_central = session_central.exec(
+        select(Usuario).where(func.lower(Usuario.email) == datos.email.strip().lower())
+    ).first()
+
+    if not usuario_central:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuario global no encontrado."
+        )
+
+    database_url = construir_database_url_empresa(config_bd)
+    engine_empresa = obtener_engine_empresa(database_url)
+
+    with Session(engine_empresa) as session_empresa:
+        # Asegurar que el rol Cliente (ID 2) existe en la base de datos de la empresa
+        rol_cliente = session_empresa.get(Rol, 2)
+        if not rol_cliente:
+            rol_cliente = Rol(
+                id_rol=2,
+                rol="Cliente",
+                descripcion="Usuario cliente del sistema",
+                niveljerarquia=2,
+                fechacreacion=datetime.utcnow(),
+            )
+            try:
+                session_empresa.add(rol_cliente)
+                session_empresa.commit()
+            except Exception:
+                session_empresa.rollback()
+
+        # Verificar si el usuario ya existe localmente
+        usuario_local = session_empresa.exec(
+            select(Usuario).where(func.lower(Usuario.email) == usuario_central.email.lower())
+        ).first()
+
+        if not usuario_local:
+            usuario_local = Usuario(
+                id_rol=2,  # Cliente
+                nombresusuario=usuario_central.nombresusuario,
+                nombres=usuario_central.nombres,
+                apellido=usuario_central.apellido,
+                email=usuario_central.email,
+                contrasena=usuario_central.contrasena,
+                telefono=usuario_central.telefono,
+                direccion=usuario_central.direccion,
+            )
+            try:
+                session_empresa.add(usuario_local)
+                session_empresa.commit()
+                session_empresa.refresh(usuario_local)
+            except Exception as e:
+                session_empresa.rollback()
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"No se pudo crear el usuario en la base de datos de la empresa: {str(e)}"
+                )
+
+        # Verificar si el cliente ya existe en la tabla de clientes de la empresa
+        nombre_completo = f"{usuario_central.nombres} {usuario_central.apellido}".strip()
+        cliente_local = session_empresa.exec(
+            select(Cliente).where(
+                or_(
+                    func.lower(Cliente.nombre) == nombre_completo.lower(),
+                    Cliente.telefono == (usuario_central.telefono or "SIN_FONO")
+                )
+            )
+        ).first()
+
+        if not cliente_local:
+            cliente_local = Cliente(
+                nombre=nombre_completo,
+                telefono=usuario_central.telefono or "",
+                direccion=usuario_central.direccion or "",
+            )
+            try:
+                session_empresa.add(cliente_local)
+                session_empresa.commit()
+            except Exception as e:
+                session_empresa.rollback()
+                print(f"Advertencia: No se pudo agregar a la tabla cliente: {e}")
+
+        # Retornar los mismos datos que el login de usuario regular
+        rol = session_empresa.get(Rol, usuario_local.id_rol)
+        rol_name = rol.rol if rol else "Cliente"
+
+        return {
+            "mensaje": "Login de usuario correcto.",
+            "id_empresa": datos.id_empresa,
+            "id_usuario": usuario_local.id_usuarios,
+            "usuario": usuario_local.nombresusuario,
+            "nombres": usuario_local.nombres,
+            "apellido": usuario_local.apellido,
+            "email": usuario_local.email,
+            "rol": rol_name,
+        }

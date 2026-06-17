@@ -15,6 +15,8 @@ class UserProvider extends ChangeNotifier {
   String _userName = 'Carlos Martínez';
   String _userEmail = 'carlos.m@example.com';
   bool _isLoading = false;
+  List<dynamic> _listaEmpresas = [];
+  List<dynamic> get listaEmpresas => _listaEmpresas;
   final AuthService _authService = AuthService();
   final CotizacionService _cotizacionService = CotizacionService();
 
@@ -107,6 +109,48 @@ class UserProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       rethrow; // Lanzar para que la UI pueda mostrar el error
+    }
+  }
+
+  // Login global en central
+  Future<Map<String, dynamic>> loginGlobal(String email, String password) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await _authService.loginGlobal(email, password);
+      _listaEmpresas = response['empresas'] ?? [];
+      _isLoading = false;
+      notifyListeners();
+      return response;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  // Vincular a la empresa seleccionada
+  Future<bool> seleccionarEmpresa(String email, int idEmpresa) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await _authService.seleccionarEmpresa(email, idEmpresa);
+      _userName = response['user']['name'] ?? 'Usuario';
+      _userEmail = response['user']['email'] ?? email;
+      _hasActiveProject = response['user']['hasActiveProject'] ?? false;
+
+      // Cargar datos locales de proyecto correspondientes a la empresa seleccionada
+      await cargarProyectoYPagos();
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
     }
   }
 

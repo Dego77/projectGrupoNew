@@ -11,6 +11,9 @@ class ApiConstants {
   // Endpoints del backend
   static const String login = '/login/usuario';
   static const String register = '/login/registro';
+  static const String loginGlobal = '/login/login-global';
+  static const String registerGlobal = '/login/registro-global';
+  static const String seleccionarEmpresa = '/login/seleccionar-empresa';
   static const String logout = '/login/cerrar-sesion';
   static const String profile = '/usuarios';
   static const String projects = '/proyectos';

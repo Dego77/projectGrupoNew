@@ -16,12 +16,6 @@ import { ApiService } from '../../services/api';
 })
 export class ClientesComponent implements OnInit {
 
-  cliente = {
-    nombre: '',
-    telefono: '',
-    direccion: ''
-  };
-
   clientes: any[] = [];
 
   constructor(
@@ -51,37 +45,6 @@ export class ClientesComponent implements OnInit {
       error: (err) => {
 
         console.log(err);
-
-      }
-
-    });
-
-  }
-
-  registrarCliente(){
-
-    this.api.crearCliente(this.cliente)
-    .subscribe({
-
-      next: () => {
-
-        alert('Cliente registrado');
-
-        this.cliente = {
-          nombre: '',
-          telefono: '',
-          direccion: ''
-        };
-
-        this.cargarClientes();
-
-      },
-
-      error: (err) => {
-
-        console.log(err);
-
-        alert('Error al registrar');
 
       }
 

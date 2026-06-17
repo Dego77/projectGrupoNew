@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app_constructora/theme/app_theme.dart';
 import 'package:app_constructora/screens/main_screen.dart';
+import 'package:app_constructora/screens/select_company_screen.dart';
 import 'package:app_constructora/screens/register_screen.dart';
 import 'package:app_constructora/screens/forgot_password_screen.dart';
 import 'package:app_constructora/providers/user_provider.dart';
@@ -37,13 +38,19 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     try {
-      // Intentar login real
-      final success = await context.read<UserProvider>().login(email, password);
-      
-      if (success && mounted) {
+      // Intentar login global
+      final response = await context.read<UserProvider>().loginGlobal(email, password);
+      final list = response['empresas'] as List<dynamic>;
+
+      if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
+          MaterialPageRoute(
+            builder: (context) => SelectCompanyScreen(
+              companies: list,
+              email: email,
+            ),
+          ),
         );
       }
     } catch (e) {
