@@ -2,7 +2,10 @@
 
   <div class="chat-card">
 
-    <h1>🤖 Asistente IA ConstructPro</h1>
+    <div class="chat-header">
+      <h1>🤖 Asistente IA ConstructPro</h1>
+      <p class="chat-subtitle">Pregunta sobre tus proyectos, materiales, presupuestos, empleados, compras e ingresos</p>
+    </div>
 
     <div class="chat-box" #chatBox>
 
@@ -11,16 +14,14 @@
         class="mensaje"
         [ngClass]="m.tipo"
       >
-
         {{ m.texto }}
-
       </div>
 
       <div
         *ngIf="cargando"
-        class="mensaje ia"
+        class="mensaje ia typing-indicator"
       >
-        Escribiendo...
+        <span></span><span></span><span></span>
       </div>
 
     </div>
@@ -33,21 +34,32 @@
         placeholder="Escribe tu pregunta..."
         (keyup.enter)="enviarPregunta()"
         [disabled]="cargando"
+        class="chat-input"
       >
 
       <button
+        class="btn-send"
         (click)="enviarPregunta()"
         [disabled]="cargando"
       >
         Enviar
       </button>
-        <button (click)="iniciarGrabacion()" [disabled]="cargando">
-    🎤 Grabar
-  </button>
+      
+      <button 
+        class="btn-record"
+        (click)="iniciarGrabacion()" 
+        [disabled]="cargando"
+      >
+        🎤 Grabar
+      </button>
 
-  <button (click)="detenerGrabacion()" [disabled]="cargando">
-    ⏹️ Detener
-  </button>
+      <button 
+        class="btn-stop"
+        (click)="detenerGrabacion()" 
+        [disabled]="cargando"
+      >
+        ⏹️ Detener
+      </button>
 
     </div>
 

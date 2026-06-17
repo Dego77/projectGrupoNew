@@ -18,35 +18,37 @@
 
     </div>
 
-    <table>
+    <div class="table-scroll-container">
+      <table>
 
-      <thead>
+        <thead>
 
-        <tr>
+          <tr>
 
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Teléfono</th>
-          <th>Dirección</th>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Teléfono</th>
+            <th>Dirección</th>
 
-        </tr>
+          </tr>
 
-      </thead>
+        </thead>
 
-      <tbody>
+        <tbody>
 
-        <tr *ngFor="let c of clientes">
+          <tr *ngFor="let c of clientes">
 
-          <td>{{ c.id_cliente }}</td>
-          <td>{{ c.nombre }}</td>
-          <td>{{ c.telefono }}</td>
-          <td>{{ c.direccion }}</td>
+            <td>{{ c.id_cliente }}</td>
+            <td>{{ c.nombre }}</td>
+            <td>{{ c.telefono }}</td>
+            <td>{{ c.direccion }}</td>
 
-        </tr>
+          </tr>
 
-      </tbody>
+        </tbody>
 
-    </table>
+      </table>
+    </div>
 
   </div>
 
@@ -68,35 +70,37 @@
 
     </div>
 
-    <table>
+    <div class="table-scroll-container">
+      <table>
 
-      <thead>
+        <thead>
 
-        <tr>
+          <tr>
 
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Ubicación</th>
-          <th>Estado</th>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Ubicación</th>
+            <th>Estado</th>
 
-        </tr>
+          </tr>
 
-      </thead>
+        </thead>
 
-      <tbody>
+        <tbody>
 
-        <tr *ngFor="let p of proyectos">
+          <tr *ngFor="let p of proyectos">
 
-          <td>{{ p.id_proyecto }}</td>
-          <td>{{ p.nombre }}</td>
-          <td>{{ p.ubicacion }}</td>
-          <td>{{ p.estado }}</td>
+            <td>{{ p.id_proyecto }}</td>
+            <td>{{ p.nombre }}</td>
+            <td>{{ p.ubicacion }}</td>
+            <td>{{ p.estado }}</td>
 
-        </tr>
+          </tr>
 
-      </tbody>
+        </tbody>
 
-    </table>
+      </table>
+    </div>
 
   </div>
 
@@ -118,35 +122,37 @@
 
     </div>
 
-    <table>
+    <div class="table-scroll-container">
+      <table>
 
-      <thead>
+        <thead>
 
-        <tr>
+          <tr>
 
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Precio</th>
-          <th>Stock</th>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Precio</th>
+            <th>Stock</th>
 
-        </tr>
+          </tr>
 
-      </thead>
+        </thead>
 
-      <tbody>
+        <tbody>
 
-        <tr *ngFor="let m of materiales">
+          <tr *ngFor="let m of materiales">
 
-          <td>{{ m.id_material }}</td>
-          <td>{{ m.nombre }}</td>
-          <td>{{ m.precio }}</td>
-          <td>{{ m.stock }}</td>
+            <td>{{ m.id_material }}</td>
+            <td>{{ m.nombre }}</td>
+            <td>{{ m.precio }}</td>
+            <td>{{ m.stock }}</td>
 
-        </tr>
+          </tr>
 
-      </tbody>
+        </tbody>
 
-    </table>
+      </table>
+    </div>
 
   </div>
 

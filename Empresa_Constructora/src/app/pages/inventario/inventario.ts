@@ -53,11 +53,11 @@ export class InventarioComponent implements OnInit {
           this.materialesFiltrados = [...this.materiales];
 
           this.stockCritico =
-            this.materiales.filter(m => m.stock <= 2).length;
+            this.materiales.filter(m => m.stock <= 30).length;
 
           this.stockBajo =
             this.materiales.filter(
-              m => m.stock > 2 && m.stock <= 5
+              m => m.stock > 30 && m.stock < 50
             ).length;
 
           this.cdr.detectChanges();
@@ -87,11 +87,11 @@ export class InventarioComponent implements OnInit {
 
   obtenerEstado(stock: number): string {
 
-    if (stock <= 2) {
+    if (stock <= 30) {
       return 'Crítico';
     }
 
-    if (stock <= 5) {
+    if (stock < 50) {
       return 'Bajo';
     }
 

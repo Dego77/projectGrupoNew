@@ -75,103 +75,105 @@
 
     <h2>Lista de Proyectos</h2>
 
-    <table>
+    <div class="table-scroll-container">
+      <table>
 
-      <thead>
+        <thead>
 
-        <tr>
+          <tr>
 
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Cliente</th>
-          <th>Ubicación</th>
-          <th>Inicio</th>
-          <th>Fin</th>
-          <th>Dirección y Supervisión</th>
-          <th>Total Pagado</th>
-          <th>Saldo Pendiente</th>
-          <th>Estado Pago</th>
-          <th>Estado Proyecto</th>
-          <th>Acciones</th>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Cliente</th>
+            <th>Ubicación</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Dirección y Supervisión</th>
+            <th>Total Pagado</th>
+            <th>Saldo Pendiente</th>
+            <th>Estado Pago</th>
+            <th>Estado Proyecto</th>
+            <th>Acciones</th>
 
-        </tr>
+          </tr>
 
-      </thead>
+        </thead>
 
-      <tbody>
+        <tbody>
 
-        <tr *ngFor="let p of proyectos">
+          <tr *ngFor="let p of proyectos">
 
-          <td>{{ p.id_proyecto }}</td>
-          <td>{{ p.nombre }}</td>
-          <td>{{ p.cliente }}</td>
-          <td>{{ p.ubicacion }}</td>
-          <td>{{ p.fecha_inicio || '-' }}</td>
-          <td>{{ p.fecha_fin || '-' }}</td>
-          <td>
-            <div *ngIf="p.id_ingeniero || p.id_residente || p.id_maestro || (p.id_albaniles && p.id_albaniles.length > 0) || (p.id_ayudantes && p.id_ayudantes.length > 0); else noAsignado" style="font-size: 12px; text-align: left; line-height: 1.4;">
-              <div *ngIf="p.id_ingeniero" style="margin-bottom: 2px;">👷 <b>Ing/Arq:</b> {{ p.nom_ingeniero }}</div>
-              <div *ngIf="p.id_residente" style="margin-bottom: 2px;">📋 <b>Residente:</b> {{ p.nom_residente }}</div>
-              <div *ngIf="p.id_maestro" style="margin-bottom: 2px;">🛠️ <b>Maestro:</b> {{ p.nom_maestro }}</div>
-              <div *ngIf="p.id_albaniles && p.id_albaniles.length > 0" style="margin-bottom: 2px;">👷 <b>Albañiles:</b> {{ p.nom_albaniles }}</div>
-              <div *ngIf="p.id_ayudantes && p.id_ayudantes.length > 0" style="margin-bottom: 2px;">👷 <b>Ayudantes:</b> {{ p.nom_ayudantes }}</div>
-              <button *ngIf="p.estado_proyecto !== 'Finalizado'" (click)="abrirModalAsignar(p)" class="btn-asignar-edit">
-                Editar
+            <td>{{ p.id_proyecto }}</td>
+            <td>{{ p.nombre }}</td>
+            <td>{{ p.cliente }}</td>
+            <td>{{ p.ubicacion }}</td>
+            <td>{{ p.fecha_inicio || '-' }}</td>
+            <td>{{ p.fecha_fin || '-' }}</td>
+            <td>
+              <div *ngIf="p.id_ingeniero || p.id_residente || p.id_maestro || (p.id_albaniles && p.id_albaniles.length > 0) || (p.id_ayudantes && p.id_ayudantes.length > 0); else noAsignado" style="font-size: 12px; text-align: left; line-height: 1.4;">
+                <div *ngIf="p.id_ingeniero" style="margin-bottom: 2px;">👷 <b>Ing/Arq:</b> {{ p.nom_ingeniero }}</div>
+                <div *ngIf="p.id_residente" style="margin-bottom: 2px;">📋 <b>Residente:</b> {{ p.nom_residente }}</div>
+                <div *ngIf="p.id_maestro" style="margin-bottom: 2px;">🛠️ <b>Maestro:</b> {{ p.nom_maestro }}</div>
+                <div *ngIf="p.id_albaniles && p.id_albaniles.length > 0" style="margin-bottom: 2px;">👷 <b>Albañiles:</b> {{ p.nom_albaniles }}</div>
+                <div *ngIf="p.id_ayudantes && p.id_ayudantes.length > 0" style="margin-bottom: 2px;">👷 <b>Ayudantes:</b> {{ p.nom_ayudantes }}</div>
+                <button *ngIf="p.estado_proyecto !== 'Finalizado'" (click)="abrirModalAsignar(p)" class="btn-asignar-edit">
+                  Editar
+                </button>
+              </div>
+              <ng-template #noAsignado>
+                <button *ngIf="p.estado_proyecto !== 'Finalizado'" (click)="abrirModalAsignar(p)" class="btn-asignar">
+                  ➕ Asignar Personal
+                </button>
+                <span *ngIf="p.estado_proyecto === 'Finalizado'" style="color: grey; font-style: italic; font-size: 12px;">Sin asignar</span>
+              </ng-template>
+            </td>
+            <td>{{ p.total_pagado | number:'1.2-2' }} Bs</td>
+            <td [style.color]="p.debe_dinero ? '#dc2626' : '#16a34a'" [style.font-weight]="'bold'">
+              {{ p.saldo_pendiente | number:'1.2-2' }} Bs
+            </td>
+            <td>
+              <span [style.background-color]="p.debe_dinero ? '#fef3c7' : '#dcfce7'"
+                    [style.color]="p.debe_dinero ? '#d97706' : '#16a34a'"
+                    [style.padding]="'4px 8px'"
+                    [style.border-radius]="'12px'"
+                    [style.font-size]="'12px'"
+                    [style.font-weight]="'bold'">
+                {{ p.estado_pago }}
+              </span>
+            </td>
+            <td>
+              <select [value]="p.estado_proyecto" 
+                      (change)="actualizarEstadoProyecto(p.id_proyecto, $event)"
+                      [style.padding]="'6px'"
+                      [style.border-radius]="'6px'"
+                      [style.border]="p.estado_proyecto === 'Pendiente' ? '2px solid #d97706' : '1px solid #ccc'"
+                      [style.background-color]="p.estado_proyecto === 'Pendiente' ? '#fffbeb' : '#fff'"
+                      [style.font-weight]="p.proyecto_finalizado || p.estado_proyecto === 'Pendiente' ? 'bold' : 'normal'"
+                      [style.color]="p.estado_proyecto === 'Pendiente' ? '#d97706' : (p.proyecto_finalizado ? '#16a34a' : '#000')">
+                <option value="Pendiente">Pendiente</option>
+                <option value="En planificación">En planificación</option>
+                <option value="En construcción">En construcción</option>
+                <option value="Finalizado">Finalizado</option>
+              </select>
+            </td>
+
+            <td class="acciones">
+
+              <button
+                class="eliminar"
+                (click)="eliminarProyecto(p.id_proyecto)"
+              >
+                🗑️
               </button>
-            </div>
-            <ng-template #noAsignado>
-              <button *ngIf="p.estado_proyecto !== 'Finalizado'" (click)="abrirModalAsignar(p)" class="btn-asignar">
-                ➕ Asignar Personal
-              </button>
-              <span *ngIf="p.estado_proyecto === 'Finalizado'" style="color: grey; font-style: italic; font-size: 12px;">Sin asignar</span>
-            </ng-template>
-          </td>
-          <td>{{ p.total_pagado | number:'1.2-2' }} Bs</td>
-          <td [style.color]="p.debe_dinero ? '#dc2626' : '#16a34a'" [style.font-weight]="'bold'">
-            {{ p.saldo_pendiente | number:'1.2-2' }} Bs
-          </td>
-          <td>
-            <span [style.background-color]="p.debe_dinero ? '#fef3c7' : '#dcfce7'"
-                  [style.color]="p.debe_dinero ? '#d97706' : '#16a34a'"
-                  [style.padding]="'4px 8px'"
-                  [style.border-radius]="'12px'"
-                  [style.font-size]="'12px'"
-                  [style.font-weight]="'bold'">
-              {{ p.estado_pago }}
-            </span>
-          </td>
-          <td>
-            <select [value]="p.estado_proyecto" 
-                    (change)="actualizarEstadoProyecto(p.id_proyecto, $event)"
-                    [style.padding]="'6px'"
-                    [style.border-radius]="'6px'"
-                    [style.border]="p.estado_proyecto === 'Pendiente' ? '2px solid #d97706' : '1px solid #ccc'"
-                    [style.background-color]="p.estado_proyecto === 'Pendiente' ? '#fffbeb' : '#fff'"
-                    [style.font-weight]="p.proyecto_finalizado || p.estado_proyecto === 'Pendiente' ? 'bold' : 'normal'"
-                    [style.color]="p.estado_proyecto === 'Pendiente' ? '#d97706' : (p.proyecto_finalizado ? '#16a34a' : '#000')">
-              <option value="Pendiente">Pendiente</option>
-              <option value="En planificación">En planificación</option>
-              <option value="En construcción">En construcción</option>
-              <option value="Finalizado">Finalizado</option>
-            </select>
-          </td>
 
-          <td class="acciones">
+            </td>
 
-            <button
-              class="eliminar"
-              (click)="eliminarProyecto(p.id_proyecto)"
-            >
-              🗑️
-            </button>
+          </tr>
 
-          </td>
+        </tbody>
 
-        </tr>
-
-      </tbody>
-
-    </table>
+      </table>
+    </div>
 
   </div>
 

@@ -125,4 +125,9 @@ export class AvancesComponent implements OnInit {
 
   }
 
+  obtenerNombreProyecto(idProyecto: any): string {
+    const p = this.proyectos.find(proj => proj.id_proyecto == idProyecto);
+    return p ? p.nombre : 'Proyecto #' + idProyecto;
+  }
+
 }

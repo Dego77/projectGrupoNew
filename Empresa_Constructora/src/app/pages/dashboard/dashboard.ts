@@ -53,6 +53,26 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  // ===== NOTIFICACIONES =====
+  showNotifications = false;
+  notifications = [
+    { text: 'Presupuesto de Proyecto Aprobado', time: 'Hace 5 min', unread: true },
+    { text: 'Nuevo avance registrado en Pollerita', time: 'Hace 2 horas', unread: true },
+    { text: 'El saldo del Cliente Beto se ha saldado (0.00 Bs)', time: 'Ayer', unread: false }
+  ];
+
+  toggleNotifications() {
+    this.showNotifications = !this.showNotifications;
+  }
+
+  marcarLeidas() {
+    this.notifications.forEach(n => n.unread = false);
+  }
+
+  get unreadCount() {
+    return this.notifications.filter(n => n.unread).length;
+  }
+
   // ===== GRAFICA LINEAL =====
 
   lineChartData = {

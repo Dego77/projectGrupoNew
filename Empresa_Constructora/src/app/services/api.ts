@@ -188,6 +188,14 @@ export class ApiService {
     );
   }
 
+  actualizarEmpleado(id: number, data: any): Observable<any> {
+    return this.http.put(
+      `${this.baseUrl}/empleados/${id}`,
+      data,
+      { headers: this.getHeaders() }
+    );
+  }
+
   crearProveedor(data: any): Observable<any> {
     return this.http.post(
       `${this.baseUrl}/proveedores`,
@@ -307,6 +315,13 @@ export class ApiService {
     return this.http.post(
       `${this.baseUrl}/documentos/subir`,
       data,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  obtenerMovimientosFinancieros(): Observable<any> {
+    return this.http.get(
+      `${this.baseUrl}/movimientos-financieros`,
       { headers: this.getHeaders() }
     );
   }

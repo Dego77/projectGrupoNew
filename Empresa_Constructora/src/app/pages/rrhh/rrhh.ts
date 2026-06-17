@@ -26,6 +26,15 @@ export class RrhhComponent implements OnInit {
 
   empleados:any[] = [];
 
+  isEditModalOpen = false;
+  editEmpleadoData = {
+    id_empleados: 0,
+    nombre: '',
+    cargo: '',
+    salario: 0,
+    telefono: ''
+  };
+
   constructor(
   private api: ApiService,
   private cd: ChangeDetectorRef
@@ -122,16 +131,37 @@ export class RrhhComponent implements OnInit {
   }
 
   editarEmpleado(emp:any){
-
-    this.empleado = {
-
+    this.editEmpleadoData = {
+      id_empleados: emp.id_empleados,
       nombre: emp.nombre,
       cargo: emp.cargo,
       salario: emp.salario,
       telefono: emp.telefono
-
     };
+    this.isEditModalOpen = true;
+  }
 
+  guardarEdicion(){
+    if (!this.editEmpleadoData.nombre || !this.editEmpleadoData.telefono) {
+      alert('Por favor complete el nombre y teléfono');
+      return;
+    }
+    this.api.actualizarEmpleado(this.editEmpleadoData.id_empleados, this.editEmpleadoData)
+    .subscribe({
+      next: () => {
+        alert('Empleado actualizado correctamente');
+        this.isEditModalOpen = false;
+        this.cargarEmpleados();
+      },
+      error: (err) => {
+        console.error(err);
+        alert('Error al actualizar empleado');
+      }
+    });
+  }
+
+  cerrarModal(){
+    this.isEditModalOpen = false;
   }
 
 }
