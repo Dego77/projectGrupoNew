@@ -249,23 +249,53 @@ def establecer_plan_pagos(
     total = Decimal(str(cotizacion.costo_estimado))
 
     if datos.tipo_plan == "directo":
+        # Registrar movimiento financiero
+        movimiento = MovimientoFinanciero(
+            id_proyecto=proyecto.id_proyecto,
+            tipo_movimiento="Ingreso",
+            categoria="Pago de proyecto",
+            monto=total,
+            fecha=datetime.utcnow().date(),
+            descripcion=f"Pago Directo Completo (100%) para el proyecto ID {proyecto.id_proyecto}"
+        )
+        session.add(movimiento)
+        session.commit()
+        session.refresh(movimiento)
+
         pago = Pago(
             id_proyecto=proyecto.id_proyecto,
+            id_movimiento=movimiento.id_movimiento,
             metodo_pago="Pago Directo",
             monto=total,
             fecha=datetime.utcnow(),
-            estado="Pendiente"
+            estado="Completado",
+            codigo_transaccion=f"TX-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
         )
         session.add(pago)
     else:
-        # 1. 5% Reserva
+        # 1. 5% Reserva (Se paga automáticamente al iniciar)
         reserva = redondear(total * Decimal("0.05"))
+        
+        movimiento_reserva = MovimientoFinanciero(
+            id_proyecto=proyecto.id_proyecto,
+            tipo_movimiento="Ingreso",
+            categoria="Pago de proyecto",
+            monto=reserva,
+            fecha=datetime.utcnow().date(),
+            descripcion=f"Pago de Reserva Inicial (5%) para el proyecto ID {proyecto.id_proyecto}"
+        )
+        session.add(movimiento_reserva)
+        session.commit()
+        session.refresh(movimiento_reserva)
+
         pago_reserva = Pago(
             id_proyecto=proyecto.id_proyecto,
+            id_movimiento=movimiento_reserva.id_movimiento,
             metodo_pago="Reserva (5%)",
             monto=reserva,
             fecha=datetime.utcnow(),
-            estado="Pendiente"
+            estado="Completado",
+            codigo_transaccion=f"TX-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
         )
         session.add(pago_reserva)
 
@@ -469,7 +499,7 @@ def obtener_detalles_proyecto_cliente(
     cant_obreros = len(id_albaniles_list) + len(id_ayudantes_list)
 
     # Fetch latest progress from AvanceProyecto
-    from models import AvanceProyecto
+    from models import AvanceProyecto, DocumentoProyecto, AvanceFoto
     latest_avance = session.exec(
         select(AvanceProyecto)
         .where(AvanceProyecto.id_proyecto == proyecto.id_proyecto)
@@ -487,13 +517,34 @@ def obtener_detalles_proyecto_cliente(
     proyecto_dict["cant_obreros"] = cant_obreros
     proyecto_dict["porcentaje_avance"] = progreso_real
 
+    # Fetch documents and photos associated with this project
+    documentos = session.exec(
+        select(DocumentoProyecto)
+        .where(DocumentoProyecto.id_proyecto == proyecto.id_proyecto)
+    ).all()
+
+    advances = session.exec(
+        select(AvanceProyecto)
+        .where(AvanceProyecto.id_proyecto == proyecto.id_proyecto)
+    ).all()
+    
+    fotos = []
+    if advances:
+        advance_ids = [adv.id_avance for adv in advances]
+        fotos = session.exec(
+            select(AvanceFoto)
+            .where(col(AvanceFoto.id_avance).in_(advance_ids))
+        ).all()
+
     return {
         "proyecto": proyecto_dict,
         "pagos": pagos,
         "total_pagado": redondear(total_pagado),
         "total_pendiente": redondear(total_pendiente),
         "total_estimado": redondear(total_estimado),
-        "cotizacion": cotizacion_data
+        "cotizacion": cotizacion_data,
+        "documentos": documentos,
+        "fotos": [f.ruta_foto for f in fotos]
     }
 
 

@@ -217,6 +217,42 @@ class AuthService {
     }
   }
 
+  // Cambiar contraseña global y localmente
+  Future<void> cambiarContrasena(
+      String email, String contrasenaActual, String nuevaContrasena, int? idEmpresa) async {
+    final url = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.cambiarContrasena}');
+    try {
+      final headers = {
+        'Content-Type': 'application/json',
+      };
+      if (idEmpresa != null) {
+        headers['X-Empresa-Id'] = idEmpresa.toString();
+      }
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: json.encode({
+          'email': email,
+          'contrasena_actual': contrasenaActual,
+          'nueva_contrasena': nuevaContrasena,
+        }),
+      );
+
+      final decoded = json.decode(response.body);
+
+      if (response.statusCode != 200) {
+        final detail = decoded['detail'] ?? 'Error al cambiar la contraseña.';
+        throw Exception(detail);
+      }
+    } catch (e) {
+      if (e is Exception) {
+        rethrow;
+      }
+      throw Exception('No se pudo conectar con el servidor: $e');
+    }
+  }
+
   // Método para cerrar sesión notificando al backend y borrando caché local
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();

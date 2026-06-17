@@ -14,6 +14,7 @@ class ApiConstants {
   static const String loginGlobal = '/login/login-global';
   static const String registerGlobal = '/login/registro-global';
   static const String seleccionarEmpresa = '/login/seleccionar-empresa';
+  static const String cambiarContrasena = '/login/cambiar-contrasena';
   static const String logout = '/login/cerrar-sesion';
   static const String profile = '/usuarios';
   static const String projects = '/proyectos';

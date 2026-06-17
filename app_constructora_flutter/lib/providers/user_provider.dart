@@ -29,6 +29,10 @@ class UserProvider extends ChangeNotifier {
   double _montoPendienteReal = 0.0;
   int? _idProyectoSeleccionado;
   List<dynamic> _misProyectosReales = [];
+  List<dynamic> _documentosProyecto = [];
+  List<dynamic> get documentosProyecto => _documentosProyecto;
+  List<String> _fotosProyecto = [];
+  List<String> get fotosProyecto => _fotosProyecto;
 
   bool get hasActiveProject => _hasActiveProject;
   int? get idProyectoSeleccionado => _idProyectoSeleccionado;
@@ -356,14 +360,17 @@ class UserProvider extends ChangeNotifier {
         _proyectoRealData = decoded['proyecto'];
         _cotizacionProyectoReal = decoded['cotizacion'];
         _pagosReales = decoded['pagos'] ?? [];
-        _montoPagadoReal = (decoded['total_pagado'] as num?)?.toDouble() ?? 0.0;
-        _montoPendienteReal = (decoded['total_pendiente'] as num?)?.toDouble() ?? 0.0;
-        _budgetTotal = (decoded['total_estimado'] as num?)?.toDouble() ?? (_montoPagadoReal + _montoPendienteReal);
+        _montoPagadoReal = double.tryParse(decoded['total_pagado']?.toString() ?? '') ?? 0.0;
+        _montoPendienteReal = double.tryParse(decoded['total_pendiente']?.toString() ?? '') ?? 0.0;
+        _budgetTotal = double.tryParse(decoded['total_estimado']?.toString() ?? '') ?? (_montoPagadoReal + _montoPendienteReal);
+        _documentosProyecto = decoded['documentos'] ?? [];
+        _fotosProyecto = List<String>.from(decoded['fotos'] ?? []);
 
         if (_proyectoRealData != null) {
-          final num? prg = _proyectoRealData!['porcentaje_avance'];
+          final String prgStr = _proyectoRealData!['porcentaje_avance']?.toString() ?? '';
+          final double? prg = double.tryParse(prgStr);
           if (prg != null) {
-            _globalProgress = prg.toDouble();
+            _globalProgress = prg;
           } else {
             final String est = _proyectoRealData!['estado'] ?? 'En planificación';
             if (est == 'Finalizado') {
@@ -475,6 +482,31 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Cambiar la contraseña del usuario actual
+  Future<void> cambiarContrasena(String contrasenaActual, String nuevaContrasena) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final int? idEmpresa = prefs.getInt('id_empresa');
+
+      await _authService.cambiarContrasena(
+        _userEmail,
+        contrasenaActual,
+        nuevaContrasena,
+        idEmpresa,
+      );
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   // Cerrar sesión
   Future<void> logout() async {
     _isLoading = true;
@@ -494,8 +526,41 @@ class UserProvider extends ChangeNotifier {
       _userEmail = '';
       _proyectoRealData = null;
       _cotizacionProyectoReal = null;
+      _documentosProyecto = [];
+      _fotosProyecto = [];
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> subirArchivoProyecto(String filePath, String tipoAdjunto) async {
+    if (_idProyectoSeleccionado == null) return;
+    
+    try {
+      final url = Uri.parse('${ApiConstants.baseUrl}/documentos/proyecto/$_idProyectoSeleccionado/adjuntar');
+      final prefs = await SharedPreferences.getInstance();
+      final int idEmpresa = prefs.getInt('id_empresa') ?? int.parse(Environment.empresaId);
+      final int idUsuario = prefs.getInt('id_usuario') ?? 1;
+
+      var request = http.MultipartRequest('POST', url);
+      request.headers.addAll({
+        'X-Empresa-Id': idEmpresa.toString(),
+        'X-Usuario-Id': idUsuario.toString(),
+      });
+
+      request.fields['tipo_adjunto'] = tipoAdjunto;
+      request.files.add(await http.MultipartFile.fromPath('archivo', filePath));
+
+      var response = await request.send();
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print("Archivo subido con éxito: $filePath");
+      } else {
+        final respStr = await response.stream.bytesToString();
+        throw Exception("Error al subir archivo: $respStr");
+      }
+    } catch (e) {
+      print("Error en subirArchivoProyecto: $e");
+      rethrow;
     }
   }
 }

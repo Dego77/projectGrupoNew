@@ -443,18 +443,17 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                       style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
                     ),
                     const Divider(height: 24),
-                    if (_selectedPlan == 'directo') ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Pago Único Pendiente', style: TextStyle(fontWeight: FontWeight.w500)),
-                          Text('\$${total.toStringAsFixed(2)} USD\n(Bs. ${(total * 6.96).toStringAsFixed(2)})', textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
-                        ],
+                     if (_selectedPlan == 'directo') ...[
+                      _buildDetailRow(
+                        'Pago Único Pendiente',
+                        '\$${total.toStringAsFixed(2)} USD\n(Bs. ${(total * 6.96).toStringAsFixed(2)})',
+                        isBold: true,
+                        color: AppTheme.primaryColor,
                       ),
                     ] else ...[
-                      _buildDetailRow('Reserva Inicial (5%)', '\$${reserva.toStringAsFixed(2)} USD (Bs. ${(reserva * 6.96).toStringAsFixed(2)})'),
+                      _buildDetailRow('Reserva Inicial (5%)', '\$${reserva.toStringAsFixed(2)} USD\n(Bs. ${(reserva * 6.96).toStringAsFixed(2)})'),
                       const SizedBox(height: 8),
-                      _buildDetailRow('Saldo a financiar (95%)', '\$${financiado.toStringAsFixed(2)} USD (Bs. ${(financiado * 6.96).toStringAsFixed(2)})'),
+                      _buildDetailRow('Saldo a financiar (95%)', '\$${financiado.toStringAsFixed(2)} USD\n(Bs. ${(financiado * 6.96).toStringAsFixed(2)})'),
                       const SizedBox(height: 8),
                       _buildDetailRow(
                         'Cuota mensual ($_selectedMonths cuotas)',
@@ -692,7 +691,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                               final p = listado[index];
                               final String estado = p['estado'] ?? 'Pendiente';
                               final bool isPaid = estado == 'Completado' || estado == 'Pagado' || estado == 'Aprobado';
-                              final double montoCuota = (p['monto'] as num).toDouble();
+                              final double montoCuota = double.tryParse(p['monto']?.toString() ?? '') ?? 0.0;
                               
                               return _buildPaymentItem(
                                 idPago: p['id_pago'],
@@ -745,6 +744,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   Widget _buildDetailRow(String label, String value, {bool isBold = false, Color? color}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
@@ -753,11 +753,15 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
             fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            color: color ?? Colors.black,
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              color: color ?? Colors.black,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
         ),
       ],

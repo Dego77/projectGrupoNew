@@ -10,7 +10,7 @@ from fastapi import (
 
 from sqlmodel import Session, select
 
-from models import DocumentoProyecto
+from models import DocumentoProyecto, AvanceProyecto, AvanceFoto
 from database_empresa import get_session_empresa
 
 
@@ -121,3 +121,72 @@ def eliminar_documento(
         session.commit()
 
     return {"ok": True}
+
+
+@router.post("/proyecto/{id_proyecto}/adjuntar")
+async def adjuntar_archivo_proyecto(
+    id_proyecto: int,
+    archivo: UploadFile = File(...),
+    tipo_adjunto: str = Form(...),  # 'foto', 'pdf', 'dwg'
+    session: Session = Depends(get_session_empresa)
+):
+    # Determine directory
+    if tipo_adjunto == "foto":
+        carpeta = Path("uploads/avances")
+    else:
+        carpeta = Path("uploads/documentos")
+
+    carpeta.mkdir(parents=True, exist_ok=True)
+    
+    # Save file content
+    ruta_archivo = carpeta / archivo.filename
+    contenido = await archivo.read()
+    with open(ruta_archivo, "wb") as f:
+        f.write(contenido)
+        
+    archivo_url = f"/uploads/{'avances' if tipo_adjunto == 'foto' else 'documentos'}/{archivo.filename}"
+
+    if tipo_adjunto == "foto":
+        # Check for client progress record
+        avance = session.exec(
+            select(AvanceProyecto)
+            .where(AvanceProyecto.id_proyecto == id_proyecto)
+            .where(AvanceProyecto.titulo == "Galería de Avances (Cliente)")
+        ).first()
+        
+        if not avance:
+            avance = AvanceProyecto(
+                id_proyecto=id_proyecto,
+                titulo="Galería de Avances (Cliente)",
+                descripcion="Fotos de avance subidad por el cliente",
+                porcentaje_avance=0,
+                responsable="Cliente"
+            )
+            session.add(avance)
+            session.commit()
+            session.refresh(avance)
+            
+        foto = AvanceFoto(
+            id_avance=avance.id_avance,
+            ruta_foto=archivo_url
+        )
+        session.add(foto)
+        session.commit()
+        session.refresh(foto)
+        return {"mensaje": "Foto de avance subida correctamente", "foto": foto}
+        
+    else:
+        tipo_doc = "Planos Arquitectónicos" if tipo_adjunto == "pdf" else "Boceto 3D y Renders"
+        
+        documento = DocumentoProyecto(
+            id_proyecto=id_proyecto,
+            nombre=archivo.filename,
+            tipo=tipo_doc,
+            archivo_url=archivo_url,
+            tamano=f"{len(contenido) // 1024} KB",
+            formato=tipo_adjunto
+        )
+        session.add(documento)
+        session.commit()
+        session.refresh(documento)
+        return {"mensaje": "Documento subido correctamente", "documento": documento}

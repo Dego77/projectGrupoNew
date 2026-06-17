@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app_constructora/theme/app_theme.dart';
 import 'package:app_constructora/screens/login_screen.dart';
+import 'package:app_constructora/screens/change_password_screen.dart';
 import 'package:app_constructora/providers/user_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -24,7 +25,7 @@ class ProfileScreen extends StatelessWidget {
             Text(userProvider.userEmail, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 48),
 
-            _buildProfileOption(context, icon: Icons.lock_outline, title: 'Cambiar Contraseña', onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Navegando a cambio de clave...')))),
+            _buildProfileOption(context, icon: Icons.lock_outline, title: 'Cambiar Contraseña', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChangePasswordScreen()))),
             _buildProfileOption(context, icon: Icons.notifications_outlined, title: 'Notificaciones', onTap: () {}),
             _buildProfileOption(context, icon: Icons.help_outline, title: 'Soporte y Ayuda', onTap: () {}),
             

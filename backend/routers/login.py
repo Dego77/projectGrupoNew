@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Header
@@ -14,6 +15,7 @@ from database_empresa import (
 from models import Empresa, BaseDeDatosEmpresa, Usuario, Rol, Cliente
 from utils.seguridad_roles import requerir_roles
 from utils.bitacora import registrar_bitacora
+from utils.email import enviar_correo
 
 
 router = APIRouter(
@@ -481,3 +483,109 @@ def seleccionar_empresa(
             "email": usuario_local.email,
             "rol": rol_name,
         }
+
+
+# Cambiar contraseña global y localmente
+class CambiarContrasenaRequest(BaseModel):
+    email: str
+    contrasena_actual: str
+    nueva_contrasena: str
+
+class CambiarContrasenaResponse(BaseModel):
+    mensaje: str
+
+
+@router.post("/cambiar-contrasena", response_model=CambiarContrasenaResponse)
+def cambiar_contrasena(
+    datos: CambiarContrasenaRequest,
+    x_empresa_id: Optional[int] = Header(None, alias="X-Empresa-Id"),
+    session_central: Session = Depends(get_session),
+):
+    email_normalizado = datos.email.strip().lower()
+
+    # 1. Buscar el usuario globalmente
+    usuario_central = session_central.exec(
+        select(Usuario).where(func.lower(Usuario.email) == email_normalizado)
+    ).first()
+
+    if not usuario_central:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuario no encontrado."
+        )
+
+    # 2. Verificar contraseña actual
+    if usuario_central.contrasena != datos.contrasena_actual:
+        raise HTTPException(
+            status_code=401,
+            detail="La contraseña actual es incorrecta."
+        )
+
+    # 3. Actualizar la contraseña en la base central
+    usuario_central.contrasena = datos.nueva_contrasena
+    try:
+        session_central.add(usuario_central)
+        session_central.commit()
+        session_central.refresh(usuario_central)
+    except Exception as e:
+        session_central.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al actualizar la contraseña global: {str(e)}"
+        )
+
+    # 4. Si hay una empresa seleccionada, actualizar la contraseña en el tenant local también
+    if x_empresa_id:
+        config_bd = session_central.exec(
+            select(BaseDeDatosEmpresa).where(
+                BaseDeDatosEmpresa.id_empresa == x_empresa_id,
+                BaseDeDatosEmpresa.estado == True,
+            )
+        ).first()
+
+        if config_bd:
+            database_url = construir_database_url_empresa(config_bd)
+            engine_empresa = obtener_engine_empresa(database_url)
+            with Session(engine_empresa) as session_empresa:
+                usuario_local = session_empresa.exec(
+                    select(Usuario).where(func.lower(Usuario.email) == email_normalizado)
+                ).first()
+
+                if usuario_local:
+                    usuario_local.contrasena = datos.nueva_contrasena
+                    try:
+                        session_empresa.add(usuario_local)
+                        session_empresa.commit()
+                    except Exception as e:
+                        session_empresa.rollback()
+                        print(f"Advertencia: No se pudo actualizar contraseña en BD local: {e}")
+
+    # 5. Enviar el correo de confirmación de éxito
+    asunto = "Cambio de contraseña exitoso"
+    contenido = f"""
+Hola {usuario_central.nombres},
+
+Te informamos que tu contraseña ha sido cambiada de manera exitosa en el sistema.
+
+A partir de ahora, debes usar tu nueva contraseña para iniciar sesión en la aplicación móvil.
+
+Si no realizaste este cambio, por favor ponte en contacto con soporte técnico de inmediato.
+
+Atentamente,
+Sistema Multiempresa
+"""
+
+    debug_skip_email = os.getenv("DEBUG_SKIP_EMAIL", "false").lower() == "true"
+    if not debug_skip_email:
+        try:
+            enviar_correo(
+                destinatario=usuario_central.email,
+                asunto=asunto,
+                contenido=contenido,
+            )
+        except Exception as error:
+            print(f"Error al enviar correo de cambio de contraseña: {error}")
+
+    return {
+        "mensaje": "Contraseña cambiada correctamente. Se ha enviado un correo electrónico de confirmación."
+    }

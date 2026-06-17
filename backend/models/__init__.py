@@ -10,5 +10,6 @@ from .empleado import Empleados, Planillas
 from .presupuesto import Presupuesto, DetallePresupuesto
 from .activo import ActivosFijos
 from .avance_proyecto import AvanceProyecto
+from .avance_foto import AvanceFoto
 from .documento_proyecto import DocumentoProyecto
 from .cotizacion import Cotizacion

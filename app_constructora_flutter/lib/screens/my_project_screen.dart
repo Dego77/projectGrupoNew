@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app_constructora/theme/app_theme.dart';
 import 'package:app_constructora/providers/user_provider.dart';
+import 'package:app_constructora/core/constants/api_constants.dart';
+import 'dart:math';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:app_constructora/screens/custom_camera_screen.dart';
 
 class MyProjectScreen extends StatefulWidget {
   const MyProjectScreen({super.key});
@@ -357,16 +362,47 @@ class _MyProjectScreenState extends State<MyProjectScreen> {
               ),
               
               const SizedBox(height: 32),
+              Center(
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _mostrarOpcionesAdjunto(context, userProvider),
+                    icon: const Icon(Icons.upload_file, color: AppTheme.primaryColor),
+                    label: const Text(
+                      'Adjuntar Plano / Foto (Opcional)',
+                      style: TextStyle(
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: const BorderSide(color: AppTheme.primaryColor, width: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
               Text('Documentos del Proyecto', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
-                    child: _buildDocCard(context, Icons.picture_as_pdf, 'Planos Arquitectónicos', 'Ver PDF'),
+                    child: GestureDetector(
+                      onTap: () => _abrirPdfViewer(context, userProvider),
+                      child: _buildDocCard(context, Icons.picture_as_pdf, 'Planos Arquitectónicos', 'Ver PDF'),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildDocCard(context, Icons.view_in_ar, 'Boceto 3D y Renders', 'Ver Galería'),
+                    child: GestureDetector(
+                      onTap: () => _abrirDwgViewer(context, userProvider),
+                      child: _buildDocCard(context, Icons.view_in_ar, 'Boceto 3D y Renders', 'Ver Galería'),
+                    ),
                   ),
                 ],
               ),
@@ -408,7 +444,7 @@ class _MyProjectScreenState extends State<MyProjectScreen> {
               const SizedBox(height: 32),
               Text('Galería de Avances', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 16),
-              _buildGallery(_progress),
+              _buildGallery(_progress, userProvider),
               _buildProjectDetailsCard(context, userProvider),
               const SizedBox(height: 20),
             ],
@@ -635,32 +671,810 @@ class _MyProjectScreenState extends State<MyProjectScreen> {
     );
   }
 
-  Widget _buildGallery(double _progress) {
-    // Definimos cuántas fotos hay basadas en la fase
+  Widget _buildGallery(double _progress, UserProvider userProvider) {
+    final clientPhotos = userProvider.fotosProyecto;
+    
+    // Fotos fijas de la maqueta (Unsplash de alta calidad)
+    final List<String> mockPhotos = [
+      'https://images.unsplash.com/photo-1590069261209-f8e9b8642343?w=800', // structural steel/concrete
+      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800', // workers on site
+      'https://images.unsplash.com/photo-1581094288338-2314dddb7ecc?w=800', // foundation/blueprint
+      'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=800', // brick wall building
+      'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800', // interior/painting
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800', // finished house
+    ];
+
     int photosCount = 2; // Cimientos
     if (_progress > 33) photosCount = 4; // Obra Gruesa
     if (_progress > 66) photosCount = 6; // Acabados
 
+    final totalItems = clientPhotos.length + photosCount;
+
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1.2),
-      itemCount: photosCount,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.2,
+      ),
+      itemCount: totalItems,
       itemBuilder: (context, index) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            color: Colors.grey.shade300,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Icon(Icons.construction, size: 40, color: Colors.grey.shade500),
-                Positioned(bottom: 0, left: 0, right: 0, child: Container(padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8), color: Colors.black54, child: Text('Avance ${index + 1}', style: const TextStyle(color: Colors.white, fontSize: 12)))),
-              ],
+        if (index < clientPhotos.length) {
+          // Render client uploaded photo
+          final photoPath = clientPhotos[index];
+          final fullUrl = photoPath.startsWith('http') 
+              ? photoPath 
+              : '${ApiConstants.baseUrl}$photoPath';
+              
+          return GestureDetector(
+            onTap: () => _verImagenEnPantallaCompleta(context, fullUrl, 'Foto del Cliente ${index + 1}'),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                color: Colors.grey.shade300,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      fullUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(child: Icon(Icons.broken_image, size: 30, color: Colors.grey.shade600));
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                      },
+                    ),
+                    Positioned(
+                      bottom: 0, left: 0, right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                        color: Colors.black54,
+                        child: Text(
+                          'Foto Cliente ${index + 1}',
+                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
+          );
+        } else {
+          // Render mock photo
+          final mockIndex = index - clientPhotos.length;
+          final mockUrl = mockIndex < mockPhotos.length ? mockPhotos[mockIndex] : mockPhotos[0];
+          return GestureDetector(
+            onTap: () => _verImagenEnPantallaCompleta(context, mockUrl, 'Avance ${mockIndex + 1}'),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                color: Colors.grey.shade300,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      mockUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(child: Icon(Icons.broken_image, size: 30, color: Colors.grey.shade600));
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                      },
+                    ),
+                    Positioned(
+                      bottom: 0, left: 0, right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                        color: Colors.black54,
+                        child: Text(
+                          'Avance ${mockIndex + 1}',
+                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  void _verImagenEnPantallaCompleta(BuildContext context, String? url, String titulo) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                child: url != null
+                    ? Image.network(
+                        url,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 80, color: Colors.white),
+                      )
+                    : Container(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.construction, size: 100, color: Colors.white),
+                            const SizedBox(height: 16),
+                            Text(titulo, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            const Text('Foto de Avance del Supervisor', style: TextStyle(color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _abrirPdfViewer(BuildContext context, UserProvider userProvider) {
+    final pdfs = userProvider.documentosProyecto.where((d) => d['formato'] == 'pdf').toList();
+    if (pdfs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aún no has adjuntado ningún Plano en PDF.')),
+      );
+      return;
+    }
+    
+    final pdf = pdfs.last;
+    showDialog(
+      context: context,
+      builder: (context) => PdfViewerDialog(
+        filename: pdf['nombre'] ?? 'plano.pdf',
+        fileUrl: pdf['archivo_url'] ?? '',
+      ),
+    );
+  }
+
+  void _abrirDwgViewer(BuildContext context, UserProvider userProvider) {
+    final dwgs = userProvider.documentosProyecto.where((d) => d['formato'] == 'dwg').toList();
+    if (dwgs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aún no has adjuntado ningún Boceto 3D (DWG).')),
+      );
+      return;
+    }
+    
+    final dwg = dwgs.last;
+    showDialog(
+      context: context,
+      builder: (context) => DwgViewerDialog(
+        filename: dwg['nombre'] ?? 'modelo.dwg',
+        fileUrl: dwg['archivo_url'] ?? '',
+      ),
+    );
+  }
+
+  void _mostrarOpcionesAdjunto(BuildContext context, UserProvider userProvider) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (modalContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Seleccionar opción',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: AppTheme.primaryColor),
+                title: const Text('Tomar Foto (Cámara)'),
+                onTap: () async {
+                  Navigator.pop(modalContext);
+                  try {
+                    final pickedPath = await Navigator.push<String>(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CustomCameraScreen()),
+                    );
+                    if (pickedPath != null) {
+                      // Show uploading state
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => const Center(
+                          child: Card(
+                            child: Padding(
+                              padding: EdgeInsets.all(24.0),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircularProgressIndicator(),
+                                  SizedBox(height: 16),
+                                  Text('Subiendo foto...'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                      
+                      await userProvider.subirArchivoProyecto(pickedPath, 'foto');
+                      await userProvider.cargarProyectoYPagos();
+                      
+                      if (context.mounted) {
+                        Navigator.pop(context); // Close loading dialog
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Foto subida y guardada en Galería de Avances.'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      Navigator.of(context).pop(); // safety close loading if open
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error al procesar foto: $e'), backgroundColor: Colors.red),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.upload_file, color: AppTheme.primaryColor),
+                title: const Text('Enviar Archivo (PDF / DWG)'),
+                onTap: () async {
+                  Navigator.pop(modalContext);
+                  try {
+                    final result = await FilePicker.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['pdf', 'dwg'],
+                    );
+                    if (result != null && result.files.single.path != null) {
+                      final file = result.files.single;
+                      final String ext = file.extension?.toLowerCase() ?? '';
+                      
+                      // Show uploading state
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => const Center(
+                          child: Card(
+                            child: Padding(
+                              padding: EdgeInsets.all(24.0),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircularProgressIndicator(),
+                                  SizedBox(height: 16),
+                                  Text('Subiendo archivo...'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                      
+                      await userProvider.subirArchivoProyecto(file.path!, ext);
+                      await userProvider.cargarProyectoYPagos();
+                      
+                      if (context.mounted) {
+                        Navigator.pop(context); // Close loading dialog
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Archivo $ext subido correctamente.'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error al seleccionar o subir archivo: $e'), backgroundColor: Colors.red),
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
           ),
         );
       },
     );
+  }
+}
+
+class PdfViewerDialog extends StatelessWidget {
+  final String filename;
+  final String fileUrl;
+  const PdfViewerDialog({super.key, required this.filename, required this.fileUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog.fullscreen(
+      backgroundColor: Colors.white,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.only(top: 40, bottom: 12, left: 16, right: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))
+              ],
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        filename,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Text('Visor de Planos PDF', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.picture_as_pdf, color: Colors.red),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Container(
+              color: const Color(0xFF0D2C6C),
+              child: CustomPaint(
+                painter: BlueprintPainter(),
+                child: Center(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SingleChildScrollView(
+                      child: Container(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: Column(
+                                children: [
+                                  const Icon(Icons.architecture, color: Colors.white, size: 80),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'PLANO ARQUITECTÓNICO',
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20, letterSpacing: 1.5),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    filename,
+                                    style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  const Text(
+                                    'ESCALA: 1:50  |  COTIZACIÓN GENERADA',
+                                    style: TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            color: Colors.grey.shade50,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Páginas: 1 de 1', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                TextButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Enlace copiado al portapapeles.')),
+                    );
+                  },
+                  icon: const Icon(Icons.link, color: AppTheme.primaryColor),
+                  label: const Text('Copiar Enlace', style: TextStyle(color: AppTheme.primaryColor)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class BlueprintPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    
+    // Draw grid lines
+    final gridPaint = Paint()
+      ..color = Colors.white.withOpacity(0.08)
+      ..strokeWidth = 1.0;
+      
+    const double step = 20.0;
+    for (double y = 0; y < h; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(w, y), gridPaint);
+    }
+    for (double x = 0; x < w; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, h), gridPaint);
+    }
+
+    // Outer walls paint (thick white)
+    final wallPaint = Paint()
+      ..color = Colors.white.withOpacity(0.9)
+      ..strokeWidth = 3.5
+      ..style = PaintingStyle.stroke;
+
+    // Thin wall paint
+    final thinWallPaint = Paint()
+      ..color = Colors.white.withOpacity(0.85)
+      ..strokeWidth = 1.8
+      ..style = PaintingStyle.stroke;
+
+    // Dashed/dimension lines paint
+    final dimPaint = Paint()
+      ..color = Colors.cyanAccent.withOpacity(0.8)
+      ..strokeWidth = 1.0;
+
+    // Doors/windows paint
+    final doorPaint = Paint()
+      ..color = Colors.yellowAccent.withOpacity(0.7)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    // Draw house walls layout centered on canvas
+    final double cx = w / 2;
+    final double cy = h / 2;
+    
+    // House bounding rectangle: 240 x 180
+    final double left = cx - 120;
+    final double right = cx + 120;
+    final double top = cy - 90;
+    final double bottom = cy + 90;
+
+    // Draw outer boundary walls
+    canvas.drawRect(Rect.fromLTRB(left, top, right, bottom), wallPaint);
+
+    // Draw internal rooms division
+    // Bedroom 1 (top-left): 100 x 90
+    canvas.drawLine(Offset(left + 100, top), Offset(left + 100, top + 90), thinWallPaint);
+    // Bathroom (bottom-left): 80 x 60
+    canvas.drawLine(Offset(left, bottom - 60), Offset(left + 80, bottom - 60), thinWallPaint);
+    canvas.drawLine(Offset(left + 80, bottom - 60), Offset(left + 80, bottom), thinWallPaint);
+    
+    // Kitchen (top-right): 100 x 80
+    canvas.drawLine(Offset(right - 100, top), Offset(right - 100, top + 80), thinWallPaint);
+    canvas.drawLine(Offset(right - 100, top + 80), Offset(right, top + 80), thinWallPaint);
+
+    // Front door bottom center
+    final frontDoorX = cx + 20;
+    // Draw door arc
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(frontDoorX, bottom), radius: 25),
+      pi,
+      pi / 2,
+      false,
+      doorPaint,
+    );
+    canvas.drawLine(Offset(frontDoorX, bottom), Offset(frontDoorX - 25, bottom), doorPaint);
+
+    // Dimension lines
+    // Top dimension line
+    canvas.drawLine(Offset(left, top - 15), Offset(right, top - 15), dimPaint);
+    canvas.drawLine(Offset(left, top - 20), Offset(left, top - 10), dimPaint);
+    canvas.drawLine(Offset(right, top - 20), Offset(right, top - 10), dimPaint);
+
+    // Text details (Rooms names, dimensions)
+    const textStyle = TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1);
+    const dimStyle = TextStyle(color: Colors.cyanAccent, fontSize: 8);
+
+    _drawText(canvas, "DORMITORIO 1\n3.00 x 3.60 m", Offset(left + 15, top + 30), textStyle);
+    _drawText(canvas, "BAÑO\n2.40 x 1.80 m", Offset(left + 12, bottom - 45), textStyle);
+    _drawText(canvas, "COCINA\n3.00 x 2.40 m", Offset(right - 85, top + 25), textStyle);
+    _drawText(canvas, "ESTANCIA / LIVING\n4.20 x 5.40 m", Offset(cx + 10, cy + 20), textStyle);
+
+    _drawText(canvas, "8.00 m", Offset(cx - 15, top - 28), dimStyle);
+    
+    // North Arrow
+    final arrowPaint = Paint()
+      ..color = Colors.white.withOpacity(0.5)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+    canvas.drawCircle(Offset(right + 30, top), 15, arrowPaint);
+    canvas.drawLine(Offset(right + 30, top + 15), Offset(right + 30, top - 15), arrowPaint);
+    canvas.drawLine(Offset(right + 30, top - 15), Offset(right + 26, top - 10), arrowPaint);
+    canvas.drawLine(Offset(right + 30, top - 15), Offset(right + 34, top - 10), arrowPaint);
+    _drawText(canvas, "N", Offset(right + 28, top - 28), const TextStyle(color: Colors.white, fontSize: 8));
+  }
+
+  void _drawText(Canvas canvas, String text, Offset offset, TextStyle style) {
+    final textPainter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, offset);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class DwgViewerDialog extends StatefulWidget {
+  final String filename;
+  final String fileUrl;
+  const DwgViewerDialog({super.key, required this.filename, required this.fileUrl});
+
+  @override
+  State<DwgViewerDialog> createState() => _DwgViewerDialogState();
+}
+
+class _DwgViewerDialogState extends State<DwgViewerDialog> {
+  double _angleX = -0.5;
+  double _angleY = 0.5;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog.fullscreen(
+      backgroundColor: Colors.black,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.only(top: 40, bottom: 12, left: 16, right: 16),
+            decoration: const BoxDecoration(
+              color: Colors.black12,
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.filename,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Text('Visor CAD 3D (DWG)', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.view_in_ar, color: Colors.blue),
+              ],
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onPanUpdate: (details) {
+                setState(() {
+                  _angleY += details.delta.dx * 0.01;
+                  _angleX -= details.delta.dy * 0.01;
+                });
+              },
+              child: Container(
+                color: const Color(0xFF1E1E1E),
+                child: CustomPaint(
+                  painter: DwgWireframePainter(_angleX, _angleY),
+                  child: Stack(
+                    children: [
+                      const Positioned(
+                        bottom: 16,
+                        left: 16,
+                        child: Text(
+                          'Arrastra para orbitar 3D',
+                          style: TextStyle(color: Colors.grey, fontSize: 12, fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                      Positioned(
+                        top: 16,
+                        right: 16,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black38,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text('PERSPECTIVA ALÁMBRICA', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
+                              Text('FPS: 60  |  X-Y Orbit', style: TextStyle(color: Colors.grey, fontSize: 9)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            color: Colors.black,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Model: 3D Wireframe', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                TextButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Enlace copiado al portapapeles.')),
+                    );
+                  },
+                  icon: const Icon(Icons.link, color: Colors.blue),
+                  label: const Text('Copiar Enlace', style: TextStyle(color: Colors.blue)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DwgWireframePainter extends CustomPainter {
+  final double angleX;
+  final double angleY;
+  DwgWireframePainter(this.angleX, this.angleY);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = Colors.grey.withOpacity(0.05)
+      ..strokeWidth = 1.0;
+    const double step = 20.0;
+    for (double y = 0; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+    for (double x = 0; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
+
+    final List<List<double>> vertices = [
+      [-1.0, -1.0, -0.6],
+      [1.0, -1.0, -0.6],
+      [1.0, 1.0, -0.6],
+      [-1.0, 1.0, -0.6],
+      [-1.0, -1.0, 0.4],
+      [1.0, -1.0, 0.4],
+      [1.0, 1.0, 0.4],
+      [-1.0, 1.0, 0.4],
+      [0.0, -1.0, 1.0],
+      [0.0, 1.0, 1.0],
+    ];
+
+    final List<List<int>> edges = [
+      [0, 1], [1, 2], [2, 3], [3, 0],
+      [0, 4], [1, 5], [2, 6], [3, 7],
+      [4, 5], [5, 6], [6, 7], [7, 4],
+      [4, 8], [5, 8], [7, 9], [6, 9],
+      [8, 9],
+    ];
+
+    final paint = Paint()
+      ..color = Colors.cyan
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke;
+
+    final double cx = size.width / 2;
+    final double cy = size.height / 2;
+    final double scale = min(size.width, size.height) * 0.25;
+
+    final double cosX = cos(angleX);
+    final double sinX = sin(angleX);
+    final double cosY = cos(angleY);
+    final double sinY = sin(angleY);
+
+    final List<Offset> projectedPoints = [];
+
+    for (var v in vertices) {
+      double x = v[0];
+      double y = v[1];
+      double z = v[2];
+
+      double x1 = x * cosY - y * sinY;
+      double y1 = x * sinY + y * cosY;
+      double z1 = z;
+
+      double x2 = x1;
+      double y2 = y1 * cosX - z1 * sinX;
+
+      double px = cx + x2 * scale;
+      double py = cy - y2 * scale;
+
+      projectedPoints.add(Offset(px, py));
+    }
+
+    for (var edge in edges) {
+      final p1 = projectedPoints[edge[0]];
+      final p2 = projectedPoints[edge[1]];
+      canvas.drawLine(p1, p2, paint);
+    }
+
+    final axisPaint = Paint()..strokeWidth = 2.0;
+    const double gizmoX = 50.0;
+    final double gizmoY = size.height - 50.0;
+    const double gizmoLen = 20.0;
+
+    final List<List<double>> axes = [
+      [1.0, 0.0, 0.0],
+      [0.0, 1.0, 0.0],
+      [0.0, 0.0, 1.0],
+    ];
+
+    final List<Color> axisColors = [Colors.red, Colors.green, Colors.blue];
+
+    for (int i = 0; i < 3; i++) {
+      double x = axes[i][0];
+      double y = axes[i][1];
+      double z = axes[i][2];
+
+      double x1 = x * cosY - y * sinY;
+      double y1 = x * sinY + y * cosY;
+      double z1 = z;
+
+      double x2 = x1;
+      double y2 = y1 * cosX - z1 * sinX;
+
+      final p = Offset(gizmoX + x2 * gizmoLen, gizmoY - y2 * gizmoLen);
+      axisPaint.color = axisColors[i];
+      canvas.drawLine(Offset(gizmoX, gizmoY), p, axisPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(DwgWireframePainter oldDelegate) {
+    return oldDelegate.angleX != angleX || oldDelegate.angleY != angleY;
   }
 }

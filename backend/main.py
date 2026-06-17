@@ -66,6 +66,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.staticfiles import StaticFiles
+import os
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("uploads/documentos", exist_ok=True)
+os.makedirs("uploads/avances", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 
 @app.get("/", tags=["Inicio"])
 def inicio():

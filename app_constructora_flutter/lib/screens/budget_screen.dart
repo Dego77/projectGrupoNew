@@ -4,6 +4,10 @@ import 'package:app_constructora/theme/app_theme.dart';
 import 'package:app_constructora/providers/user_provider.dart';
 import 'package:app_constructora/screens/main_screen.dart';
 import 'package:app_constructora/services/ia_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import 'package:app_constructora/screens/custom_camera_screen.dart';
 
 class BudgetScreen extends StatefulWidget {
   final IaCotizacionResult? initialData;
@@ -20,6 +24,8 @@ class _BudgetScreenState extends State<BudgetScreen> {
   final _m2TerrenoController = TextEditingController();
   final _m2ConstruirController = TextEditingController();
   final _adicionalesController = TextEditingController();
+
+  final List<Map<String, String>> _archivosAdjuntos = [];
 
   final List<String> _ambientes = ['Living', 'Comedor', 'Sala de estar', 'Estacionamiento', 'Cocina', 'Lavandería', 'Balcón/Terraza', 'Jardín'];
   final List<String> _ambientesSeleccionados = [];
@@ -112,81 +118,111 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
     final double total = costoBase + costoAmbientes + costoHabitaciones + costoBanos + costoEstudios;
 
+    bool guardando = false;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (modalContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(modalContext).viewInsets.bottom,
-            left: 24, right: 24, top: 24,
-          ),
-          child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text('Resumen de Presupuesto', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-                const SizedBox(height: 24),
-                
-                _buildSummaryItem('Costo Base (${m2Construir}m² x \$$multiplicadorMaterial)', '\$${costoBase.toStringAsFixed(2)} USD\n(Bs. ${(costoBase * 6.96).toStringAsFixed(2)})'),
-                _buildSummaryItem('Ampliaciones y Ambientes (${_ambientesSeleccionados.length})', '\$${costoAmbientes.toStringAsFixed(2)} USD\n(Bs. ${(costoAmbientes * 6.96).toStringAsFixed(2)})'),
-                _buildSummaryItem('Cuartos ($_habitaciones) y Baños ($_banos)', '\$${(costoHabitaciones + costoBanos).toStringAsFixed(2)} USD\n(Bs. ${((costoHabitaciones + costoBanos) * 6.96).toStringAsFixed(2)})'),
-                _buildSummaryItem('Estudios de terreno y factibilidad', '\$${costoEstudios.toStringAsFixed(2)} USD\n(Bs. ${(costoEstudios * 6.96).toStringAsFixed(2)})'),
-                const Divider(height: 32, thickness: 1),
-                _buildSummaryItem('TOTAL ESTIMADO', '\$${total.toStringAsFixed(2)} USD\n(Bs. ${(total * 6.96).toStringAsFixed(2)})', isBold: true),
-                
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: () async {
-                    try {
-                      // Guardar cotización en la BD real
-                      await context.read<UserProvider>().saveCotizacion(
-                            nombre: _projectNameController.text.trim().isNotEmpty
-                                ? _projectNameController.text.trim()
-                                : 'Proyecto Sin Nombre',
-                            ubicacion: _addressController.text.isNotEmpty ? _addressController.text : 'Ubicación no especificada',
-                            m2Terreno: int.tryParse(_m2TerrenoController.text) ?? 0,
-                            m2Construir: m2Construir,
-                            habitaciones: _habitaciones,
-                            banos: _banos,
-                            calidadMateriales: _materialSeleccionado,
-                            ambientes: _ambientesSeleccionados,
-                            adicionales: _adicionalesController.text,
-                            costoEstimado: total,
-                          );
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(modalContext).viewInsets.bottom,
+                left: 24, right: 24, top: 24,
+              ),
+              child: SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('Resumen de Presupuesto', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                    const SizedBox(height: 24),
+                    
+                    _buildSummaryItem('Costo Base (${m2Construir}m² x \$$multiplicadorMaterial)', '\$${costoBase.toStringAsFixed(2)} USD\n(Bs. ${(costoBase * 6.96).toStringAsFixed(2)})'),
+                    _buildSummaryItem('Ampliaciones y Ambientes (${_ambientesSeleccionados.length})', '\$${costoAmbientes.toStringAsFixed(2)} USD\n(Bs. ${(costoAmbientes * 6.96).toStringAsFixed(2)})'),
+                    _buildSummaryItem('Cuartos ($_habitaciones) y Baños ($_banos)', '\$${(costoHabitaciones + costoBanos).toStringAsFixed(2)} USD\n(Bs. ${((costoHabitaciones + costoBanos) * 6.96).toStringAsFixed(2)})'),
+                    _buildSummaryItem('Estudios de terreno y factibilidad', '\$${costoEstudios.toStringAsFixed(2)} USD\n(Bs. ${(costoEstudios * 6.96).toStringAsFixed(2)})'),
+                    const Divider(height: 32, thickness: 1),
+                    _buildSummaryItem('TOTAL ESTIMADO', '\$${total.toStringAsFixed(2)} USD\n(Bs. ${(total * 6.96).toStringAsFixed(2)})', isBold: true),
+                    
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: guardando
+                          ? null
+                          : () async {
+                              setModalState(() => guardando = true);
+                              try {
+                                // Guardar cotización en la BD real
+                                await context.read<UserProvider>().saveCotizacion(
+                                      nombre: _projectNameController.text.trim().isNotEmpty
+                                          ? _projectNameController.text.trim()
+                                          : 'Proyecto Sin Nombre',
+                                      ubicacion: _addressController.text.isNotEmpty ? _addressController.text : 'Ubicación no especificada',
+                                      m2Terreno: int.tryParse(_m2TerrenoController.text) ?? 0,
+                                      m2Construir: m2Construir,
+                                      habitaciones: _habitaciones,
+                                      banos: _banos,
+                                      calidadMateriales: _materialSeleccionado,
+                                      ambientes: _ambientesSeleccionados,
+                                      adicionales: _adicionalesController.text,
+                                      costoEstimado: total,
+                                    );
 
-                      // Éxito
-                      if (modalContext.mounted) {
-                        Navigator.pop(modalContext); // Cierra modal
-                      }
-                      
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Cotización guardada exitosamente.'), backgroundColor: Colors.green),
-                        );
-                        // Redirigir a pestaña Pagos
-                        context.findAncestorStateOfType<MainScreenState>()?.onItemTapped(3);
-                      }
-                    } catch (e) {
-                      if (modalContext.mounted) {
-                        Navigator.pop(modalContext);
-                      }
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error al guardar cotización: $e'), backgroundColor: Colors.red),
-                        );
-                      }
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                  child: const Text('Comenzar Proyecto (Avanzar a Pago)'),
+                                // Subir archivos adjuntos si existen
+                                if (_archivosAdjuntos.isNotEmpty && context.mounted) {
+                                  final userProvider = context.read<UserProvider>();
+                                  for (var adjunto in _archivosAdjuntos) {
+                                    final path = adjunto['path'];
+                                    final type = adjunto['type'];
+                                    if (path != null && type != null) {
+                                      await userProvider.subirArchivoProyecto(path, type);
+                                    }
+                                  }
+                                  // Recargar datos finales del proyecto
+                                  await userProvider.cargarProyectoYPagos();
+                                }
+
+                                // Éxito
+                                if (modalContext.mounted) {
+                                  Navigator.pop(modalContext); // Cierra modal
+                                }
+                                
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Cotización y archivos guardados exitosamente.'), backgroundColor: Colors.green),
+                                  );
+                                  // Redirigir a pestaña Pagos
+                                  context.findAncestorStateOfType<MainScreenState>()?.onItemTapped(3);
+                                }
+                              } catch (e) {
+                                setModalState(() => guardando = false);
+                                if (modalContext.mounted) {
+                                  Navigator.pop(modalContext);
+                                }
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error al guardar cotización: $e'), backgroundColor: Colors.red),
+                                  );
+                                }
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                      child: guardando
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          : const Text('Comenzar Proyecto (Avanzar a Pago)'),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
+              ),
+            );
+          }
         );
       }
     );
@@ -213,6 +249,84 @@ class _BudgetScreenState extends State<BudgetScreen> {
     );
   }
 
+  void _mostrarOpcionesAdjunto() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Seleccionar opción',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: AppTheme.primaryColor),
+                title: const Text('Tomar Foto (Cámara)'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  try {
+                    final pickedPath = await Navigator.push<String>(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CustomCameraScreen()),
+                    );
+                    if (pickedPath != null) {
+                      setState(() {
+                        _archivosAdjuntos.add({
+                          'path': pickedPath,
+                          'name': pickedPath.split('/').last,
+                          'type': 'foto',
+                        });
+                      });
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(this.context).showSnackBar(
+                      SnackBar(content: Text('Error al abrir la cámara: $e')),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.upload_file, color: AppTheme.primaryColor),
+                title: const Text('Enviar Archivo (PDF / DWG)'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  try {
+                    final result = await FilePicker.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['pdf', 'dwg'],
+                    );
+                    if (result != null && result.files.single.path != null) {
+                      final file = result.files.single;
+                      final String ext = file.extension?.toLowerCase() ?? '';
+                      setState(() {
+                        _archivosAdjuntos.add({
+                          'path': file.path!,
+                          'name': file.name,
+                          'type': ext == 'pdf' ? 'pdf' : 'dwg',
+                        });
+                      });
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(this.context).showSnackBar(
+                      SnackBar(content: Text('Error al seleccionar archivo: $e')),
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final userProvider = context.watch<UserProvider>();
@@ -232,11 +346,59 @@ class _BudgetScreenState extends State<BudgetScreen> {
             TextField(controller: _addressController, decoration: const InputDecoration(labelText: 'Ubicación del proyecto')),
             const SizedBox(height: 16),
             OutlinedButton.icon(
-              onPressed: (){},
+              onPressed: _mostrarOpcionesAdjunto,
               icon: const Icon(Icons.upload_file),
               label: const Text('Adjuntar Plano / Foto (Opcional)'),
               style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
             ),
+            if (_archivosAdjuntos.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Archivos Seleccionados:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+                    const SizedBox(height: 6),
+                    ..._archivosAdjuntos.map((file) {
+                      IconData icon = Icons.insert_drive_file;
+                      if (file['type'] == 'foto') icon = Icons.camera_alt_outlined;
+                      if (file['type'] == 'pdf') icon = Icons.picture_as_pdf_outlined;
+                      if (file['type'] == 'dwg') icon = Icons.architecture_outlined;
+                      
+                      final String name = file['name'] ?? 'Archivo';
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: Row(
+                          children: [
+                            Icon(icon, size: 16, color: AppTheme.primaryColor),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, size: 16, color: Colors.red),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () {
+                                setState(() {
+                                  _archivosAdjuntos.remove(file);
+                                });
+                              },
+                            )
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+            ],
             
             const SizedBox(height: 32),
             const Text('Ambientes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
