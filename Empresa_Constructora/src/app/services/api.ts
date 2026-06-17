@@ -234,6 +234,13 @@ export class ApiService {
     );
   }
 
+  obtenerDetallesCompra(): Observable<any> {
+    return this.http.get(
+      `${this.baseUrl}/detalle-compras`,
+      { headers: this.getHeaders() }
+    );
+  }
+
   obtenerMateriales(): Observable<any> {
     return this.http.get(
       `${this.baseUrl}/materiales`,
@@ -329,6 +336,93 @@ export class ApiService {
   obtenerVentas(): Observable<any> {
     return this.http.get(
       `${this.baseUrl}/ventas`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  obtenerDetalleProyectoCliente(idProyecto: number): Observable<any> {
+    return this.http.get(
+      `${this.baseUrl}/casos-uso/hu33/cliente/proyectos/${idProyecto}`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  // ===== ACTIVOS FIJOS =====
+  obtenerActivos(): Observable<any> {
+    return this.http.get(
+      `${this.baseUrl}/activos-fijos`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  crearActivo(data: any): Observable<any> {
+    return this.http.post(
+      `${this.baseUrl}/activos-fijos`,
+      data,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  actualizarActivo(id: any, data: any): Observable<any> {
+    return this.http.put(
+      `${this.baseUrl}/activos-fijos/${id}`,
+      data,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  eliminarActivo(id: any): Observable<any> {
+    return this.http.delete(
+      `${this.baseUrl}/activos-fijos/${id}`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  // ===== MANTENIMIENTO ACTIVOS =====
+  obtenerMantenimientos(): Observable<any> {
+    return this.http.get(
+      `${this.baseUrl}/mantenimiento-activos`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  crearMantenimiento(data: any): Observable<any> {
+    return this.http.post(
+      `${this.baseUrl}/mantenimiento-activos`,
+      data,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  // ===== HISTORIAL DE ACTIVOS =====
+  obtenerHistorialActivos(): Observable<any> {
+    return this.http.get(
+      `${this.baseUrl}/activo-historicos`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  crearHistorialActivo(data: any): Observable<any> {
+    return this.http.post(
+      `${this.baseUrl}/activo-historicos`,
+      data,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  // ===== APROBACION DE COMPRAS =====
+  aprobarCompra(id: number): Observable<any> {
+    return this.http.post(
+      `${this.baseUrl}/compras/${id}/aprobar`,
+      {},
+      { headers: this.getHeaders() }
+    );
+  }
+
+  rechazarCompra(id: number): Observable<any> {
+    return this.http.post(
+      `${this.baseUrl}/compras/${id}/rechazar`,
+      {},
       { headers: this.getHeaders() }
     );
   }

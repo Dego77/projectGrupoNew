@@ -173,6 +173,22 @@ async def adjuntar_archivo_proyecto(
         session.add(foto)
         session.commit()
         session.refresh(foto)
+
+        # Notificar al cliente en tiempo real sobre la nueva foto
+        try:
+            from models import Proyecto
+            from routers.notificaciones_app import enviar_notificacion_push
+            proyecto = session.get(Proyecto, id_proyecto)
+            if proyecto and proyecto.id_usuarios:
+                enviar_notificacion_push(
+                    id_usuario=proyecto.id_usuarios,
+                    titulo=f"Nueva foto de avance: {proyecto.nombre}",
+                    mensaje="Se ha subido una nueva imagen del avance de tu obra.",
+                    data={"id_proyecto": str(id_proyecto), "tipo": "foto_avance"}
+                )
+        except Exception as e:
+            print(f"Error al enviar notificación de foto subida: {e}")
+
         return {"mensaje": "Foto de avance subida correctamente", "foto": foto}
         
     else:

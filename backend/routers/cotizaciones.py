@@ -102,6 +102,19 @@ def crear_cotizacion(
         descripcion=f"Cotización ID {nueva_cotizacion.id_cotizacion} creada por valor de {nueva_cotizacion.costo_estimado} Bs.",
     )
 
+    # Notificar al cliente sobre la cotización validada/aprobada por la IA
+    try:
+        from routers.notificaciones_app import enviar_notificacion_push
+        if id_usuario:
+            enviar_notificacion_push(
+                id_usuario=id_usuario,
+                titulo="Cotización validada por la IA",
+                mensaje=f"La IA del asistente ha validado y aprobado tu cotización para '{nueva_cotizacion.nombre}' por un costo estimado de {nueva_cotizacion.costo_estimado} Bs.",
+                data={"id_cotizacion": str(nueva_cotizacion.id_cotizacion), "tipo": "cotizacion"}
+            )
+    except Exception as e:
+        print(f"Error al enviar notificación de cotización: {e}")
+
     # Retornar respuesta mapeada
     return CotizacionResponse(
         id_cotizacion=nueva_cotizacion.id_cotizacion or 0,

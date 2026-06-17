@@ -27,7 +27,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
   final List<Map<String, String>> _archivosAdjuntos = [];
 
-  final List<String> _ambientes = ['Living', 'Comedor', 'Sala de estar', 'Estacionamiento', 'Cocina', 'Lavandería', 'Balcón/Terraza', 'Jardín'];
+  final List<String> _ambientes = ['Living', 'Comedor', 'Sala de estar', 'Estacionamiento', 'Cocina', 'Lavandería', 'Balcón/Terraza', 'Jardín', 'Vestidor'];
   final List<String> _ambientesSeleccionados = [];
 
   int _habitaciones = 1;

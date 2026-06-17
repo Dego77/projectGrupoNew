@@ -1,6 +1,6 @@
 from crud.factory import crear_crud_router
 
-from models import Proyecto, Presupuesto, DetallePresupuesto, ActivosFijos
+from models import Proyecto, Presupuesto, DetallePresupuesto, ActivosFijos, MantenimientoActivo, ActivoHistorico
 
 
 proyecto_router = crear_crud_router(
@@ -31,10 +31,26 @@ activos_fijos_router = crear_crud_router(
     campos_pk=("id_activo",),
 )
 
+mantenimiento_activo_router = crear_crud_router(
+    modelo=MantenimientoActivo,
+    prefix="/mantenimiento-activos",
+    tags=["Proyectos - Mantenimiento activos"],
+    campos_pk=("id_mantenimiento",),
+)
+
+activo_historico_router = crear_crud_router(
+    modelo=ActivoHistorico,
+    prefix="/activo-historicos",
+    tags=["Proyectos - Historial activos"],
+    campos_pk=("id_historico",),
+)
+
 
 routers = [
     proyecto_router,
     presupuesto_router,
     detalle_presupuesto_router,
     activos_fijos_router,
+    mantenimiento_activo_router,
+    activo_historico_router,
 ]

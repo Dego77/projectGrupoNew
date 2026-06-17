@@ -843,6 +843,195 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
     );
   }
 
+  void _mostrarDialogoQR(BuildContext context, int idPago, String cuotaNombre) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        Map<String, dynamic>? qrData;
+        String? errorMsg;
+        bool cargando = true;
+        bool confirmando = false;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            if (cargando && errorMsg == null && qrData == null) {
+              context.read<UserProvider>().generarQrPago(idPago).then((data) {
+                setDialogState(() {
+                  qrData = data;
+                  cargando = false;
+                });
+              }).catchError((err) {
+                setDialogState(() {
+                  errorMsg = err.toString();
+                  cargando = false;
+                });
+              });
+            }
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Pago Rápido QR - $cuotaNombre',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(dialogContext),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (cargando) ...[
+                    const SizedBox(height: 40),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    const Text('Generando Código QR...', style: TextStyle(color: Colors.grey)),
+                    const SizedBox(height: 40),
+                  ] else if (errorMsg != null) ...[
+                    const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                    const SizedBox(height: 16),
+                    Text(errorMsg!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 16),
+                  ] else if (qrData != null) ...[
+                    const Text(
+                      'Escanea el código QR desde tu banca móvil para pagar al instante.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 13, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Image.network(
+                        qrData!['qr_url'],
+                        width: 200,
+                        height: 200,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const SizedBox(
+                            width: 200,
+                            height: 200,
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return const SizedBox(
+                            width: 200,
+                            height: 200,
+                            child: Center(child: Text('Error al cargar QR')),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildModalDetailRow('Banco:', qrData!['banco']),
+                          const SizedBox(height: 6),
+                          _buildModalDetailRow('Cuenta Destino:', qrData!['cuenta']),
+                          const SizedBox(height: 6),
+                          _buildModalDetailRow('Monto:', 'Bs. ${qrData!['monto']}'),
+                          const SizedBox(height: 6),
+                          _buildModalDetailRow('Concepto:', qrData!['concepto']),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                if (qrData != null)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: confirmando
+                          ? null
+                          : () async {
+                              setDialogState(() => confirmando = true);
+                              try {
+                                await context.read<UserProvider>().confirmarQrPago(idPago);
+                                if (dialogContext.mounted) {
+                                  Navigator.pop(dialogContext);
+                                }
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('¡Transferencia realizada con éxito! Pago registrado.'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                setDialogState(() => confirmando = false);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error al confirmar pago: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                      icon: confirmando
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          : const Icon(Icons.check_circle_outline, color: Colors.white),
+                      label: Text(confirmando ? 'Procesando...' : 'Confirmar Transferencia Bancaria (Simulada)'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildModalDetailRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black87),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildPaymentItem({
     required int idPago,
     required String title,
@@ -907,17 +1096,38 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                       'PAGADO',
                       style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11),
                     )
-                  : SizedBox(
-                      height: 30,
-                      child: ElevatedButton(
-                        onPressed: _processingPayment ? null : onPay,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: 30,
+                          child: ElevatedButton(
+                            onPressed: _processingPayment ? null : onPay,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: const Text('Pagar', style: TextStyle(fontSize: 11)),
+                          ),
                         ),
-                        child: const Text('Pagar', style: TextStyle(fontSize: 12)),
-                      ),
+                        const SizedBox(width: 6),
+                        SizedBox(
+                          height: 30,
+                          child: ElevatedButton.icon(
+                            onPressed: _processingPayment
+                                ? null
+                                : () => _mostrarDialogoQR(context, idPago, title),
+                            icon: const Icon(Icons.qr_code_2, size: 14, color: Colors.white),
+                            label: const Text('QR', style: TextStyle(fontSize: 11, color: Colors.white)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue.shade700,
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
             ],
           )

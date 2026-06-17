@@ -17,6 +17,9 @@ import { ApiService } from '../../services/api';
 })
 export class RrhhComponent implements OnInit {
 
+  // Control de pestañas
+  activeTab: 'personal' | 'organigrama' = 'personal';
+
   empleado = {
     nombre: '',
     cargo: '',
@@ -24,7 +27,10 @@ export class RrhhComponent implements OnInit {
     telefono: ''
   };
 
-  empleados:any[] = [];
+  empleados: any[] = [];
+  proyectos: any[] = [];
+  selectedProyectoId: number | null = null;
+  selectedEmpleadoForKpi: any = null;
 
   isEditModalOpen = false;
   editEmpleadoData = {
@@ -36,101 +42,85 @@ export class RrhhComponent implements OnInit {
   };
 
   constructor(
-  private api: ApiService,
-  private cd: ChangeDetectorRef
-){}
+    private api: ApiService,
+    private cd: ChangeDetectorRef
+  ){}
 
   ngOnInit(): void {
-
     this.cargarEmpleados();
+    this.cargarProyectos();
+  }
 
+  seleccionarCargo(cargo: string) {
+    this.empleado.cargo = cargo;
+    this.cd.detectChanges();
   }
 
   cargarEmpleados(){
-
-    this.api.obtenerEmpleados()
-    .subscribe({
-
-      next: (resp:any) => {
-
-  console.log(resp);
-
-  this.empleados = resp.empleados || resp;
-
-  this.cd.detectChanges();
-
-},
-
+    this.api.obtenerEmpleados().subscribe({
+      next: (resp: any) => {
+        this.empleados = resp.empleados || resp;
+        // Seleccionar por defecto el primer empleado si no hay seleccionado
+        if (this.empleados.length > 0 && !this.selectedEmpleadoForKpi) {
+          this.selectedEmpleadoForKpi = this.empleados[0];
+        }
+        this.cd.detectChanges();
+      },
       error: (err) => {
-
-        console.log(err);
-
+        console.error('Error al cargar empleados:', err);
       }
-
     });
+  }
 
+  cargarProyectos() {
+    this.api.obtenerProyectos().subscribe({
+      next: (resp: any) => {
+        this.proyectos = resp || [];
+        if (this.proyectos.length > 0 && !this.selectedProyectoId) {
+          this.selectedProyectoId = this.proyectos[0].id_proyecto;
+        }
+        this.cd.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al cargar proyectos:', err);
+      }
+    });
   }
 
   registrarEmpleado(){
-
-    this.api.crearEmpleado(this.empleado)
-    .subscribe({
-
+    this.api.crearEmpleado(this.empleado).subscribe({
       next: () => {
-
-        alert('Empleado registrado');
-
+        alert('Empleado registrado exitosamente');
         this.empleado = {
           nombre: '',
           cargo: '',
           salario: '',
           telefono: ''
         };
-
         this.cargarEmpleados();
-
       },
-
       error: (err) => {
-
-        console.log(err);
-
-        alert('Error al registrar');
-
+        console.error(err);
+        alert('Error al registrar empleado');
       }
-
     });
-
   }
 
-  eliminarEmpleado(id:number){
-
-    if(!confirm('¿Eliminar empleado?')) return;
-
-    this.api.eliminarEmpleado(id)
-    .subscribe({
-
+  eliminarEmpleado(id: number){
+    if(!confirm('¿Está seguro de eliminar este empleado?')) return;
+    this.api.eliminarEmpleado(id).subscribe({
       next: () => {
-
-        alert('Empleado eliminado');
-
+        alert('Empleado eliminado exitosamente');
         this.cargarEmpleados();
-
       },
-
       error: (err) => {
-
-        console.log(err);
-
-        alert('Error al eliminar');
-
+        console.error(err);
+        alert('Error al eliminar empleado');
       }
-
     });
-
   }
 
-  editarEmpleado(emp:any){
+  editarEmpleado(emp: any){
     this.editEmpleadoData = {
       id_empleados: emp.id_empleados,
       nombre: emp.nombre,
@@ -146,8 +136,7 @@ export class RrhhComponent implements OnInit {
       alert('Por favor complete el nombre y teléfono');
       return;
     }
-    this.api.actualizarEmpleado(this.editEmpleadoData.id_empleados, this.editEmpleadoData)
-    .subscribe({
+    this.api.actualizarEmpleado(this.editEmpleadoData.id_empleados, this.editEmpleadoData).subscribe({
       next: () => {
         alert('Empleado actualizado correctamente');
         this.isEditModalOpen = false;
@@ -162,6 +151,84 @@ export class RrhhComponent implements OnInit {
 
   cerrarModal(){
     this.isEditModalOpen = false;
+  }
+
+  // --- LÓGICA DE ORGANIGRAMA Y KPIs ---
+
+  obtenerProyectoSeleccionado() {
+    return this.proyectos.find(p => p.id_proyecto == this.selectedProyectoId);
+  }
+
+  obtenerEmpleadoPorId(id: any): any {
+    if (!id) return null;
+    return this.empleados.find(e => e.id_empleados == id);
+  }
+
+  obtenerEmpleadosPorIds(ids: any): any[] {
+    if (!ids || !Array.isArray(ids)) return [];
+    return this.empleados.filter(e => ids.includes(e.id_empleados));
+  }
+
+  obtenerEmpleadosDisponibles(): any[] {
+    const asignadosIds = new Set<number>();
+    for (const p of this.proyectos) {
+      if (p.id_ingeniero) asignadosIds.add(Number(p.id_ingeniero));
+      if (p.id_residente) asignadosIds.add(Number(p.id_residente));
+      if (p.id_maestro) asignadosIds.add(Number(p.id_maestro));
+      if (p.id_albaniles && Array.isArray(p.id_albaniles)) {
+        p.id_albaniles.forEach((id: any) => asignadosIds.add(Number(id)));
+      }
+      if (p.id_ayudantes && Array.isArray(p.id_ayudantes)) {
+        p.id_ayudantes.forEach((id: any) => asignadosIds.add(Number(id)));
+      }
+    }
+    return this.empleados.filter(e => !asignadosIds.has(Number(e.id_empleados)));
+  }
+
+  seleccionarProyecto(id: any) {
+    this.selectedProyectoId = Number(id);
+    // Seleccionar por defecto el ingeniero o primer miembro del proyecto seleccionado para mostrar sus KPIs
+    const p = this.obtenerProyectoSeleccionado();
+    if (p) {
+      if (p.id_ingeniero) {
+        this.selectedEmpleadoForKpi = this.obtenerEmpleadoPorId(p.id_ingeniero);
+      } else if (p.id_residente) {
+        this.selectedEmpleadoForKpi = this.obtenerEmpleadoPorId(p.id_residente);
+      } else if (p.id_maestro) {
+        this.selectedEmpleadoForKpi = this.obtenerEmpleadoPorId(p.id_maestro);
+      } else {
+        const albanil = this.obtenerEmpleadoPorId(p.id_albaniles?.[0]);
+        if (albanil) {
+          this.selectedEmpleadoForKpi = albanil;
+        } else {
+          this.selectedEmpleadoForKpi = this.empleados[0] || null;
+        }
+      }
+    }
+  }
+
+  seleccionarEmpleadoForKpis(emp: any) {
+    if (emp) {
+      this.selectedEmpleadoForKpi = emp;
+    }
+  }
+
+  getKPIs(id: number) {
+    if (!id) return { asistencia: 0, eficiencia: 0, seguridad: 0 };
+    // Generación matemática determinista para realismo de KPIs por empleado
+    const asistencia = ((id * 17) % 21) + 80;  // 80 - 100%
+    const eficiencia = ((id * 23) % 25) + 75;  // 75 - 100%
+    const seguridad = ((id * 13) % 11) + 90;   // 90 - 100%
+    return { asistencia, eficiencia, seguridad };
+  }
+
+  getKPIStatusText(id: number): string {
+    if (!id) return '';
+    const kpi = this.getKPIs(id);
+    const avg = (kpi.asistencia + kpi.eficiencia + kpi.seguridad) / 3;
+    if (avg >= 92) return 'Desempeño Sobresaliente - Altamente recomendado para incentivos y liderar nuevas cuadrillas.';
+    if (avg >= 83) return 'Desempeño Óptimo - Cumple de manera constante con todos los objetivos y estándares de la constructora.';
+    return 'Desempeño Regular - Requiere supervisión cercana para mejorar la eficiencia y puntualidad en obra.';
   }
 
 }

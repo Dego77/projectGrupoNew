@@ -22,6 +22,21 @@ def registrar_avance(
 
     session.refresh(avance)
 
+    # Notificar al cliente sobre el nuevo avance registrado en tiempo real
+    try:
+        from models import Proyecto
+        from routers.notificaciones_app import enviar_notificacion_push
+        proyecto = session.get(Proyecto, avance.id_proyecto)
+        if proyecto and proyecto.id_usuarios:
+            enviar_notificacion_push(
+                id_usuario=proyecto.id_usuarios,
+                titulo=f"Nuevo avance registrado: {proyecto.nombre}",
+                mensaje=f"Se ha registrado el avance '{avance.titulo}' con un {avance.porcentaje_avance}% de progreso.",
+                data={"id_proyecto": str(proyecto.id_proyecto), "tipo": "avance"}
+            )
+    except Exception as e:
+        print(f"Error al enviar notificación de avance: {e}")
+
     return avance
 
 

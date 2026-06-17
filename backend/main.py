@@ -85,3 +85,5 @@ def health():
 
 
 incluir_routers(app)
+
+# Fuerza recarga de uvicorn tras cambios en crud/factory.py

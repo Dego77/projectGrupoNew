@@ -17,6 +17,7 @@ import { InventarioComponent } from './pages/inventario/inventario';
 import { AvancesComponent } from './pages/avances/avances';
 import { DocumentosComponent } from './pages/documentos/documentos';
 import { LoginAdminComponent } from './pages/login-admin/login-admin';
+import { ActivosComponent } from './pages/activos/activos';
 export const routes: Routes = [
 
   {
@@ -91,6 +92,10 @@ export const routes: Routes = [
 {
   path: 'documentos',
   component: DocumentosComponent
+},
+{
+  path: 'activos',
+  component: ActivosComponent
 }
 
 

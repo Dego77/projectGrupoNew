@@ -166,6 +166,22 @@ def actualizar_estado_pago(
         descripcion=f"Pago ID {id_pago}: {estado_anterior} -> {datos.estado}.",
     )
 
+    # Notificar al cliente sobre la validación del pago en tiempo real
+    if datos.estado in ["Completado", "Pagado", "Aprobado"]:
+        try:
+            from models import Proyecto
+            from routers.notificaciones_app import enviar_notificacion_push
+            proyecto = session.get(Proyecto, pago.id_proyecto)
+            if proyecto and proyecto.id_usuarios:
+                enviar_notificacion_push(
+                    id_usuario=proyecto.id_usuarios,
+                    titulo="¡Pago validado y confirmado!",
+                    mensaje=f"Tu pago de {pago.monto} Bs. para la cuota '{pago.metodo_pago}' del proyecto '{proyecto.nombre}' ha sido verificado con éxito.",
+                    data={"id_pago": str(id_pago), "tipo": "pago"}
+                )
+        except Exception as e:
+            print(f"Error al enviar notificación de pago validado: {e}")
+
     return {
         "mensaje": "Estado del pago actualizado correctamente.",
         "pago": pago
@@ -590,6 +606,21 @@ def registrar_pago_cuota(
         accion="Pagar cuota",
         descripcion=f"Cuota {id_pago} de {pago.monto} Bs pagada para proyecto {pago.id_proyecto}."
     )
+
+    # Notificar al cliente sobre el registro de su pago
+    try:
+        from models import Proyecto
+        from routers.notificaciones_app import enviar_notificacion_push
+        proyecto = session.get(Proyecto, pago.id_proyecto)
+        if proyecto and proyecto.id_usuarios:
+            enviar_notificacion_push(
+                id_usuario=proyecto.id_usuarios,
+                titulo="Confirmación de pago recibida",
+                mensaje=f"Tu pago de {pago.monto} Bs. para la cuota '{pago.metodo_pago}' del proyecto '{proyecto.nombre}' ha sido registrado con éxito.",
+                data={"id_pago": str(id_pago), "tipo": "pago"}
+            )
+    except Exception as e:
+        print(f"Error al enviar notificación de pago registrado: {e}")
 
     return {
         "mensaje": "Pago registrado con éxito.",

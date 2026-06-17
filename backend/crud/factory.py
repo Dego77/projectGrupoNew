@@ -232,6 +232,71 @@ def crear_crud_router(
                 )
 
             try:
+                # Manual cascade to prevent foreign key constraint violations
+                if modelo.__name__ == "Empleados":
+                    from models import Planillas, Proyecto
+                    # Delete associated planillas
+                    planillas_asociadas = session.exec(
+                        select(Planillas).where(Planillas.id_empleados == item_id)
+                    ).all()
+                    for planilla in planillas_asociadas:
+                        session.delete(planilla)
+                    
+                    # Nullify references in Proyecto
+                    proyectos_asociados = session.exec(
+                        select(Proyecto).where(
+                            (Proyecto.id_ingeniero == item_id) |
+                            (Proyecto.id_residente == item_id) |
+                            (Proyecto.id_maestro == item_id)
+                        )
+                    ).all()
+                    for proyecto in proyectos_asociados:
+                        if proyecto.id_ingeniero == item_id:
+                            proyecto.id_ingeniero = None
+                        if proyecto.id_residente == item_id:
+                            proyecto.id_residente = None
+                        if proyecto.id_maestro == item_id:
+                            proyecto.id_maestro = None
+                        session.add(proyecto)
+
+                    # Remove from arrays (id_albaniles, id_ayudantes)
+                    all_proyectos = session.exec(select(Proyecto)).all()
+                    for proyecto in all_proyectos:
+                        modificado = False
+                        if proyecto.id_albaniles and item_id in proyecto.id_albaniles:
+                            proyecto.id_albaniles = [x for x in proyecto.id_albaniles if x != item_id]
+                            modificado = True
+                        if proyecto.id_ayudantes and item_id in proyecto.id_ayudantes:
+                            proyecto.id_ayudantes = [x for x in proyecto.id_ayudantes if x != item_id]
+                            modificado = True
+                        if modificado:
+                            session.add(proyecto)
+                    
+                    session.commit()
+
+                elif modelo.__name__ == "Cliente":
+                    from models import Venta, Pago, MovimientoFinanciero
+                    ventas_asociadas = session.exec(
+                        select(Venta).where(Venta.id_cliente == item_id)
+                    ).all()
+                    for venta in ventas_asociadas:
+                        # Delete associated pagos
+                        pagos_asociados = session.exec(
+                            select(Pago).where(Pago.id_venta == venta.id_venta)
+                        ).all()
+                        for pago in pagos_asociados:
+                            session.delete(pago)
+                        
+                        # Delete associated financial movement
+                        if venta.id_movimiento:
+                            mov = session.get(MovimientoFinanciero, venta.id_movimiento)
+                            if mov:
+                                session.delete(mov)
+                        
+                        session.delete(venta)
+                    
+                    session.commit()
+
                 session.delete(objeto)
                 session.commit()
 

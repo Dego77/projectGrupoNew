@@ -4,7 +4,11 @@ import 'package:app_constructora/theme/app_theme.dart';
 import 'package:app_constructora/screens/login_screen.dart';
 import 'package:app_constructora/providers/user_provider.dart';
 
-void main() {
+import 'package:app_constructora/services/notification_service.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().init();
   runApp(
     MultiProvider(
       providers: [

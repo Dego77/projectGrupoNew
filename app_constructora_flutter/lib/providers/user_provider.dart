@@ -6,6 +6,7 @@ import 'package:app_constructora/core/constants/api_constants.dart';
 import 'package:app_constructora/core/config/environment.dart';
 import '../services/auth_service.dart';
 import '../services/cotizacion_service.dart';
+import '../services/notification_service.dart';
 
 class UserProvider extends ChangeNotifier {
   bool _hasActiveProject = false;
@@ -306,6 +307,9 @@ class UserProvider extends ChangeNotifier {
       final int idUsuario = prefs.getInt('id_usuario') ?? 1;
       final int idEmpresa = prefs.getInt('id_empresa') ?? int.parse(Environment.empresaId);
 
+      // Iniciar la escucha de notificaciones SSE en tiempo real
+      NotificationService().startListening(idUsuario);
+
       // 1. Obtener listado de todos los proyectos del cliente
       final listUrl = Uri.parse('${ApiConstants.baseUrl}/casos-uso/hu33/cliente/proyectos');
       final listResponse = await http.get(
@@ -561,6 +565,50 @@ class UserProvider extends ChangeNotifier {
     } catch (e) {
       print("Error en subirArchivoProyecto: $e");
       rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> generarQrPago(int idPago) async {
+    final prefs = await SharedPreferences.getInstance();
+    final int idUsuario = prefs.getInt('id_usuario') ?? 1;
+    final int idEmpresa = prefs.getInt('id_empresa') ?? int.parse(Environment.empresaId);
+    
+    final url = Uri.parse('${ApiConstants.baseUrl}/casos-uso/hu33/qr/$idPago/generar-qr');
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Empresa-Id': idEmpresa.toString(),
+        'X-Usuario-Id': idUsuario.toString(),
+      },
+    );
+    
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception(json.decode(response.body)['detail'] ?? 'Error al generar QR');
+    }
+  }
+
+  Future<void> confirmarQrPago(int idPago) async {
+    final prefs = await SharedPreferences.getInstance();
+    final int idUsuario = prefs.getInt('id_usuario') ?? 1;
+    final int idEmpresa = prefs.getInt('id_empresa') ?? int.parse(Environment.empresaId);
+    
+    final url = Uri.parse('${ApiConstants.baseUrl}/casos-uso/hu33/qr/$idPago/confirmar-qr');
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Empresa-Id': idEmpresa.toString(),
+        'X-Usuario-Id': idUsuario.toString(),
+      },
+    );
+    
+    if (response.statusCode == 200) {
+      await cargarProyectoYPagos();
+    } else {
+      throw Exception(json.decode(response.body)['detail'] ?? 'Error al confirmar pago QR');
     }
   }
 }

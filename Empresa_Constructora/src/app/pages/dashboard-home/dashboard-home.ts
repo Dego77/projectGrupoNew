@@ -136,7 +136,18 @@ export class DashboardHomeComponent implements OnInit {
         // 2. Proyectos
         const listaProyectos = res.proyectos || [];
         this.cantObras = listaProyectos.filter((p: any) => (p.estado || p.estado_proyecto) !== 'Finalizado').length;
-        this.ultimasObras = listaProyectos.slice(0, 5);
+        
+        // Filter: only show projects in specified active/completed states, exclude 'Pendiente' completely
+        const validStates = ['en construcción', 'en planificación', 'planificación', 'en ejecución', 'finalizado', 'finalizados'];
+        const filteredProyectos = listaProyectos.filter((p: any) => {
+          const st = (p.estado || p.estado_proyecto || '').toLowerCase();
+          return validStates.includes(st);
+        });
+
+        // Sort by id_proyecto descending (most recent first)
+        this.ultimasObras = filteredProyectos
+          .sort((a: any, b: any) => Number(b.id_proyecto || 0) - Number(a.id_proyecto || 0))
+          .slice(0, 5);
 
         const construccion = listaProyectos.filter((p: any) => (p.estado === 'En construcción' || p.estado_proyecto === 'En construcción')).length;
         const planificacion = listaProyectos.filter((p: any) => (p.estado === 'En planificación' || p.estado_proyecto === 'En planificación' || p.estado === 'Planificación')).length;

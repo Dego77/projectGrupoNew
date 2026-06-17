@@ -8,6 +8,7 @@ from .cu33_pagos_proyecto import router as cu33_pagos_proyecto_router
 from .registrar_proyecto import router as registrar_proyecto_router
 from .registrar_compra import router as registrar_compra_router
 from .registrar_venta import router as registrar_venta_router
+from .qr_pago import router as qr_pago_router
 
 
 routers = [
@@ -20,5 +21,6 @@ routers = [
     cu33_pagos_proyecto_router,
     registrar_proyecto_router,
     registrar_compra_router,
-    registrar_venta_router
+    registrar_venta_router,
+    qr_pago_router
 ]

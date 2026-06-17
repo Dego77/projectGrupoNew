@@ -17,6 +17,7 @@ from .empleados import routers as empleados_routers
 from .avances import router as avances_router
 from .documentos import router as documentos_router
 from .cotizaciones import router as cotizaciones_router
+from .notificaciones_app import router as notificaciones_app_router
 
 
 def incluir_routers(app):
@@ -34,7 +35,8 @@ def incluir_routers(app):
 
             avances_router,
             documentos_router,
-            cotizaciones_router
+            cotizaciones_router,
+            notificaciones_app_router
         ]
 
         + sistema_routers

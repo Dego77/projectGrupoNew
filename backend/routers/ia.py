@@ -380,6 +380,22 @@ def generar_respuesta_local_de_respaldo(pregunta: str, contexto: str, error_msg:
     stock_match = re.search(r"Materiales con stock bajo:\n(.*?)(?=\n\n|\n[A-Z]|$)", contexto, re.DOTALL)
     lista_stock_bajo = stock_match.group(1).strip() if stock_match else ""
 
+    # Extraer la lista de clientes
+    clientes_match = re.search(r"Clientes:\n(.*?)(?=\n\n|\n[A-Z]|$)", contexto, re.DOTALL)
+    lista_clientes = clientes_match.group(1).strip() if clientes_match else ""
+
+    # Extraer la lista de proveedores
+    proveedores_match = re.search(r"Proveedores:\n(.*?)(?=\n\n|\n[A-Z]|$)", contexto, re.DOTALL)
+    lista_proveedores = proveedores_match.group(1).strip() if proveedores_match else ""
+
+    # Extraer la lista de compras
+    compras_match = re.search(r"Compras recientes:\n(.*?)(?=\n\n|\n[A-Z]|$)", contexto, re.DOTALL)
+    lista_compras = compras_match.group(1).strip() if compras_match else ""
+
+    # Extraer la lista de pagos
+    pagos_match = re.search(r"Pagos recientes:\n(.*?)(?=\n\n|\n[A-Z]|$)", contexto, re.DOTALL)
+    lista_pagos = pagos_match.group(1).strip() if pagos_match else ""
+
     explicacion_error = ""
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if api_key.startswith("AQ."):
@@ -408,6 +424,22 @@ def generar_respuesta_local_de_respaldo(pregunta: str, contexto: str, error_msg:
             f"{explicacion_error}"
         )
         return msg
+
+    elif any(p in texto_pregunta for p in ["cliente"]):
+        msg = (
+            f"Hola. Tienes **{cli_count} clientes** registrados en la empresa.\n\n"
+            f"**Lista de clientes registrados:**\n{lista_clientes}\n"
+            f"{explicacion_error}"
+        )
+        return msg
+
+    elif any(p in texto_pregunta for p in ["proveedor"]):
+        msg = (
+            f"Hola. Tienes proveedores registrados en el sistema.\n\n"
+            f"**Lista de proveedores:**\n{lista_proveedores}\n"
+            f"{explicacion_error}"
+        )
+        return msg
         
     elif any(p in texto_pregunta for p in ["empleado", "rrhh", "trabajador", "personal"]):
         msg = (
@@ -416,7 +448,25 @@ def generar_respuesta_local_de_respaldo(pregunta: str, contexto: str, error_msg:
         )
         return msg
         
-    elif any(p in texto_pregunta for p in ["dinero", "caja", "financiero", "ingreso", "egreso", "saldo", "presupuestado"]):
+    elif any(p in texto_pregunta for p in ["compra", "compras", "egreso", "egresos"]):
+        msg = (
+            f"Hola. Aquí tienes las compras y egresos recientes de la empresa:\n\n"
+            f"**Historial de compras:**\n{lista_compras}\n\n"
+            f"**Egresos Totales:** {egresos}\n"
+            f"{explicacion_error}"
+        )
+        return msg
+
+    elif any(p in texto_pregunta for p in ["pago", "pagos", "ingreso", "ingresos"]):
+        msg = (
+            f"Hola. Aquí tienes el historial de pagos y cobros registrados:\n\n"
+            f"**Pagos recientes:**\n{lista_pagos}\n\n"
+            f"**Ingresos Totales:** {ingresos}\n"
+            f"{explicacion_error}"
+        )
+        return msg
+
+    elif any(p in texto_pregunta for p in ["dinero", "caja", "financiero", "saldo", "presupuestado"]):
         msg = (
             f"Resumen financiero de la empresa:\n"
             f"- **Ingresos totales:** {ingresos}\n"
@@ -764,7 +814,9 @@ def heuristica_extraer_datos(transcripcion: str, resultado: dict) -> dict:
         "terraza": "Balcón/Terraza",
         "jardín": "Jardín",
         "jardin": "Jardín",
-        "patio": "Jardín"
+        "patio": "Jardín",
+        "vestidor": "Vestidor",
+        "closet": "Vestidor"
     }
     
     for palabra, nombre in ambientes_posibles.items():

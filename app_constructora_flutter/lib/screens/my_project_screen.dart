@@ -4,7 +4,6 @@ import 'package:app_constructora/theme/app_theme.dart';
 import 'package:app_constructora/providers/user_provider.dart';
 import 'package:app_constructora/core/constants/api_constants.dart';
 import 'dart:math';
-import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:app_constructora/screens/custom_camera_screen.dart';
 
@@ -71,6 +70,7 @@ class _MyProjectScreenState extends State<MyProjectScreen> {
     }
 
     final String estadoProyecto = userProvider.proyectoRealData?['estado'] ?? '';
+    final String estadoNormalizado = estadoProyecto.trim().toLowerCase();
 
     if (estadoProyecto == 'Pendiente') {
       return Scaffold(
@@ -411,35 +411,44 @@ class _MyProjectScreenState extends State<MyProjectScreen> {
               Text('Línea de Tiempo', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 16),
               
-              // Fases dependientes de _progress
-              // Fase 1: Cimientos (0 - 33)
-              _buildDynamicTimelineNode(
-                context, 
-                _progress,
-                title: 'Cimientos y Estructura Base', 
-                startThreshold: 0, 
-                endThreshold: 33, 
-                isLast: false
+              // Fases dependientes del estado del proyecto
+              
+              // Fase 1: En planificación
+              _buildStateTimelineNode(
+                context,
+                title: 'En planificación',
+                isPast: estadoNormalizado == 'en construcción' || estadoNormalizado == 'finalizado',
+                isCurrent: estadoNormalizado == 'en planificación' || estadoNormalizado == 'pendiente' || estadoNormalizado == '',
+                statusText: (estadoNormalizado == 'en construcción' || estadoNormalizado == 'finalizado')
+                    ? 'Completado'
+                    : 'En curso',
+                isLast: false,
               ),
               
-              // Fase 2: Obra Gruesa (34 - 66)
-              _buildDynamicTimelineNode(
-                context, 
-                _progress,
-                title: 'Mampostería y Obra Gruesa', 
-                startThreshold: 34, 
-                endThreshold: 66, 
-                isLast: false
+              // Fase 2: En construcción
+              _buildStateTimelineNode(
+                context,
+                title: 'En construcción',
+                isPast: estadoNormalizado == 'finalizado',
+                isCurrent: estadoNormalizado == 'en construcción',
+                statusText: estadoNormalizado == 'finalizado'
+                    ? 'Completado'
+                    : (estadoNormalizado == 'en construcción'
+                        ? 'En curso (${_progress.toInt()}%)'
+                        : 'Pendiente'),
+                isLast: false,
               ),
               
-              // Fase 3: Acabados (67 - 100)
-              _buildDynamicTimelineNode(
-                context, 
-                _progress,
-                title: 'Acabados, Pintura y Entrega', 
-                startThreshold: 67, 
-                endThreshold: 100, 
-                isLast: true
+              // Fase 3: Finalizado
+              _buildStateTimelineNode(
+                context,
+                title: 'Finalizado',
+                isPast: false,
+                isCurrent: estadoNormalizado == 'finalizado',
+                statusText: estadoNormalizado == 'finalizado'
+                    ? 'Proyecto Finalizado'
+                    : 'Pendiente',
+                isLast: true,
               ),
               const SizedBox(height: 32),
               Text('Galería de Avances', style: Theme.of(context).textTheme.titleLarge),
@@ -624,21 +633,14 @@ class _MyProjectScreenState extends State<MyProjectScreen> {
     );
   }
 
-  Widget _buildDynamicTimelineNode(BuildContext context, double _progress, {required String title, required int startThreshold, required int endThreshold, required bool isLast}) {
-    bool isPast = _progress > endThreshold;
-    bool isCurrent = _progress >= startThreshold && _progress <= endThreshold;
-    
-    // Si la progresión es menor a 0 en casos raros
-    if (_progress == 100 && startThreshold == 67) {
-       isPast = true;
-       isCurrent = false; // El último se marca completado si estamos a 100%
-    }
-
-    String dateStr = 'Pendiente';
-    if (isPast) dateStr = 'Completado';
-    if (isCurrent) dateStr = 'En curso (${_progress.toInt()}%)';
-    if (_progress == 100 && startThreshold >= 67) dateStr = 'Proyecto Finalizado';
-
+  Widget _buildStateTimelineNode(
+    BuildContext context, {
+    required String title,
+    required bool isPast,
+    required bool isCurrent,
+    required String statusText,
+    required bool isLast,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -660,9 +662,22 @@ class _MyProjectScreenState extends State<MyProjectScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-               Text(title, style: TextStyle(fontSize: 16, fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500, color: isCurrent ? Colors.black87 : (isPast ? Colors.black87 : Colors.grey))),
+               Text(
+                 title, 
+                 style: TextStyle(
+                   fontSize: 16, 
+                   fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500, 
+                   color: isCurrent ? Colors.black87 : (isPast ? Colors.black87 : Colors.grey),
+                 ),
+               ),
                const SizedBox(height: 4),
-               Text(dateStr, style: TextStyle(fontSize: 13, color: isCurrent ? Colors.orange.shade800 : AppTheme.textSecondaryColor)),
+               Text(
+                 statusText, 
+                 style: TextStyle(
+                   fontSize: 13, 
+                   color: isCurrent ? Colors.orange.shade800 : AppTheme.textSecondaryColor,
+                 ),
+               ),
                const SizedBox(height: 24),
             ],
           ),

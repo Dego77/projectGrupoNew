@@ -21,6 +21,7 @@ class Compra(SQLModel, table=True):
     id_usuarios: Optional[int] = Field(default=None, foreign_key="usuario.id_usuarios")
     fecha: Optional[date] = None
     total: Decimal
+    estado: str = Field(default="Aprobada")
 
 
 class DetalleCompra(SQLModel, table=True):
