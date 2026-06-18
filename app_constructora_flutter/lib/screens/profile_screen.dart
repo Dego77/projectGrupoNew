@@ -4,9 +4,86 @@ import 'package:app_constructora/theme/app_theme.dart';
 import 'package:app_constructora/screens/login_screen.dart';
 import 'package:app_constructora/screens/change_password_screen.dart';
 import 'package:app_constructora/providers/user_provider.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
+
+  Future<void> _pickAndCropImage(BuildContext context, ImageSource source) async {
+    final picker = ImagePicker();
+    try {
+      final pickedFile = await picker.pickImage(source: source);
+      if (pickedFile != null) {
+        final croppedFile = await ImageCropper().cropImage(
+          sourcePath: pickedFile.path,
+          uiSettings: [
+            AndroidUiSettings(
+              toolbarTitle: 'Editar Foto',
+              toolbarColor: AppTheme.primaryColor,
+              toolbarWidgetColor: Colors.white,
+              initAspectRatio: CropAspectRatioPreset.square,
+              lockAspectRatio: false,
+              aspectRatioPresets: [
+                CropAspectRatioPreset.square,
+                CropAspectRatioPreset.ratio3x2,
+                CropAspectRatioPreset.original,
+                CropAspectRatioPreset.ratio4x3,
+                CropAspectRatioPreset.ratio16x9
+              ],
+            ),
+            IOSUiSettings(
+              title: 'Editar Foto',
+              aspectRatioPresets: [
+                CropAspectRatioPreset.square,
+                CropAspectRatioPreset.ratio3x2,
+                CropAspectRatioPreset.original,
+                CropAspectRatioPreset.ratio4x3,
+                CropAspectRatioPreset.ratio16x9
+              ],
+            ),
+          ],
+        );
+
+        if (croppedFile != null) {
+          context.read<UserProvider>().updateProfilePhotoPath(croppedFile.path);
+        }
+      }
+    } catch (e) {
+      print('Error al seleccionar imagen: $e');
+    }
+  }
+
+  void _showPickerOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext bc) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Galería'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickAndCropImage(context, ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Cámara'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickAndCropImage(context, ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +95,35 @@ class ProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            const CircleAvatar(radius: 50, backgroundColor: AppTheme.primaryColor, child: Icon(Icons.person, size: 50, color: Colors.white)),
+            GestureDetector(
+              onTap: () => _showPickerOptions(context),
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 55,
+                    backgroundColor: AppTheme.primaryColor,
+                    backgroundImage: userProvider.profilePhotoPath != null 
+                        ? FileImage(File(userProvider.profilePhotoPath!))
+                        : null,
+                    child: userProvider.profilePhotoPath == null 
+                        ? const Icon(Icons.person, size: 55, color: Colors.white)
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: AppTheme.primaryColor,
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: const Icon(Icons.edit, color: Colors.white, size: 20),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 16),
             Text(userProvider.userName, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 4),

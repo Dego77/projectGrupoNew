@@ -259,6 +259,7 @@ class EmpresaItem(BaseModel):
     id_empresa: int
     nombre: str
     email: str
+    logo: Optional[str] = None
 
 class LoginGlobalResponse(BaseModel):
     mensaje: str
@@ -353,7 +354,8 @@ def login_global(
         {
             "id_empresa": emp.id_empresa,
             "nombre": emp.nombre,
-            "email": emp.email
+            "email": emp.email,
+            "logo": getattr(emp, "logo", None)
         }
         for emp in empresas
     ]

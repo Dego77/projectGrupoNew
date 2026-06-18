@@ -15,11 +15,16 @@ class UserProvider extends ChangeNotifier {
   double _budgetTotal = 185000.0;
   String _userName = 'Carlos Martínez';
   String _userEmail = 'carlos.m@example.com';
+  String? _profilePhotoPath;
   bool _isLoading = false;
   List<dynamic> _listaEmpresas = [];
   List<dynamic> get listaEmpresas => _listaEmpresas;
   final AuthService _authService = AuthService();
   final CotizacionService _cotizacionService = CotizacionService();
+
+  UserProvider() {
+    loadProfilePhoto();
+  }
 
   int? _idCotizacionCreada;
   bool _tieneProyectoReal = false;
@@ -44,6 +49,7 @@ class UserProvider extends ChangeNotifier {
   String get userName => _userName;
   String get userEmail => _userEmail;
   bool get isLoading => _isLoading;
+  String? get profilePhotoPath => _profilePhotoPath;
 
   int? get idCotizacionCreada => _idCotizacionCreada;
   bool get tieneProyectoReal => _tieneProyectoReal;
@@ -57,6 +63,21 @@ class UserProvider extends ChangeNotifier {
   void setUserData(String name, String email) {
     if (name.isNotEmpty) _userName = name;
     if (email.isNotEmpty) _userEmail = email;
+    notifyListeners();
+  }
+
+  // Actualizar foto de perfil
+  Future<void> updateProfilePhotoPath(String path) async {
+    _profilePhotoPath = path;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('profile_photo_path', path);
+  }
+
+  // Cargar foto de perfil al iniciar
+  Future<void> loadProfilePhoto() async {
+    final prefs = await SharedPreferences.getInstance();
+    _profilePhotoPath = prefs.getString('profile_photo_path');
     notifyListeners();
   }
 

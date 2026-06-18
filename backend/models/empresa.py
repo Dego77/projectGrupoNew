@@ -13,6 +13,7 @@ class Empresa(SQLModel, table=True):
     email: str
     direccion: str
     estado: str
+    logo: Optional[str] = None
 
  # Contraseña de acceso de la empresa al sistema
     contrasena: Optional[str] = None

@@ -18,6 +18,7 @@ import { AvancesComponent } from './pages/avances/avances';
 import { DocumentosComponent } from './pages/documentos/documentos';
 import { LoginAdminComponent } from './pages/login-admin/login-admin';
 import { ActivosComponent } from './pages/activos/activos';
+import { PerfilEmpresaComponent } from './pages/perfil-empresa/perfil-empresa';
 export const routes: Routes = [
 
   {
@@ -96,6 +97,10 @@ export const routes: Routes = [
 {
   path: 'activos',
   component: ActivosComponent
+},
+{
+  path: 'perfil',
+  component: PerfilEmpresaComponent
 }
 
 

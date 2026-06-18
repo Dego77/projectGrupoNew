@@ -346,3 +346,38 @@ def registrar_empresa_saas(
         "nombre_bd": nombre_bd,
         "mensaje": "Empresa registrada, base de datos creada y permisos iniciales configurados correctamente.",
     }
+
+
+class UpdateLogoRequest(BaseModel):
+    logo: str
+
+@router.put("/{id_empresa}/logo")
+def actualizar_logo_empresa(
+    id_empresa: int,
+    datos: UpdateLogoRequest,
+    session_central: Session = Depends(get_session),
+):
+    """
+    Actualiza el logo (en base64) de una empresa en la BD central.
+    """
+    empresa = session_central.get(Empresa, id_empresa)
+    
+    if not empresa:
+        raise HTTPException(
+            status_code=404,
+            detail="Empresa no encontrada."
+        )
+
+    empresa.logo = datos.logo
+
+    try:
+        session_central.add(empresa)
+        session_central.commit()
+    except Exception as error:
+        session_central.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"No se pudo guardar el logo: {str(error)}"
+        )
+
+    return {"mensaje": "Logo actualizado correctamente"}

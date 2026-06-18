@@ -58,6 +58,13 @@ export class ApiService {
     );
   }
 
+  actualizarLogoEmpresa(idEmpresa: number, logoBase64: string): Observable<any> {
+    return this.http.put(
+      `${this.baseUrl}/empresas-saas/${idEmpresa}/logo`,
+      { logo: logoBase64 }
+    );
+  }
+
   loginEmpresa(data: any): Observable<any> {
     return this.http.post(
       `${this.baseUrl}/login/empresa`,
