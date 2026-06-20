@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:app_constructora/theme/app_theme.dart';
 import 'package:app_constructora/screens/login_screen.dart';
 import 'package:app_constructora/screens/change_password_screen.dart';
+import 'package:app_constructora/screens/notifications_screen.dart';
 import 'package:app_constructora/providers/user_provider.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -131,7 +132,7 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 48),
 
             _buildProfileOption(context, icon: Icons.lock_outline, title: 'Cambiar Contraseña', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChangePasswordScreen()))),
-            _buildProfileOption(context, icon: Icons.notifications_outlined, title: 'Notificaciones', onTap: () {}),
+            _buildProfileOption(context, icon: Icons.notifications_outlined, title: 'Notificaciones', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsScreen()))),
             _buildProfileOption(context, icon: Icons.help_outline, title: 'Soporte y Ayuda', onTap: () {}),
             
             const SizedBox(height: 32),

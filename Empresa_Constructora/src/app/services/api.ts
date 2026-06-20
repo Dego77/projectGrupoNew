@@ -163,10 +163,10 @@ export class ApiService {
     );
   }
 
-  preguntarIA(pregunta: string): Observable<any> {
+  preguntarIA(pregunta: string, historial: any[] = []): Observable<any> {
     return this.http.post(
       `${this.baseUrl}/ia/preguntar-contexto`,
-      { pregunta: pregunta },
+      { pregunta: pregunta, historial: historial },
       { headers: this.getHeaders() }
     ).pipe(
       timeout(60000)
@@ -430,6 +430,13 @@ export class ApiService {
     return this.http.post(
       `${this.baseUrl}/compras/${id}/rechazar`,
       {},
+      { headers: this.getHeaders() }
+    );
+  }
+
+  obtenerEstadoResultados(): Observable<any> {
+    return this.http.get(
+      `${this.baseUrl}/reportes/estado-resultados`,
       { headers: this.getHeaders() }
     );
   }

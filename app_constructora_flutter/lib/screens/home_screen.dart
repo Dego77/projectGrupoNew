@@ -4,6 +4,8 @@ import 'package:app_constructora/theme/app_theme.dart';
 import 'package:app_constructora/providers/user_provider.dart';
 import 'package:app_constructora/screens/main_screen.dart';
 import 'package:app_constructora/screens/voice_prompt_screen.dart';
+import 'package:app_constructora/screens/notifications_screen.dart';
+import 'package:app_constructora/providers/notification_provider.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -75,7 +77,44 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Inicio'),
         actions: [
-          IconButton(icon: const Icon(Icons.notifications_none_rounded), onPressed: () {}),
+          Consumer<NotificationProvider>(
+            builder: (context, notificationProvider, child) {
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none_rounded),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                      );
+                    },
+                  ),
+                  if (notificationProvider.notifications.isNotEmpty)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '${notificationProvider.unreadCount}',
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           const SizedBox(width: 8),
         ],
       ),

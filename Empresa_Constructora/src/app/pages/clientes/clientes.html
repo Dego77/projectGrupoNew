@@ -6,49 +6,51 @@
 
     <h2>Lista de Clientes</h2>
 
-    <table>
+    <div class="table-scroll-container">
+      <table>
 
-      <thead>
+        <thead>
 
-        <tr>
+          <tr>
 
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Teléfono</th>
-          <th>Dirección</th>
-          <th>Acciones</th>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Teléfono</th>
+            <th>Dirección</th>
+            <th>Acciones</th>
 
-        </tr>
+          </tr>
 
-      </thead>
+        </thead>
 
-      <tbody>
+        <tbody>
 
-        <tr *ngFor="let c of clientes">
+          <tr *ngFor="let c of clientes">
 
-          <td>{{ c.id_cliente }}</td>
-          <td>{{ c.nombre }}</td>
-          <td>{{ c.telefono }}</td>
-          <td>{{ c.direccion }}</td>
+            <td>{{ c.id_cliente }}</td>
+            <td>{{ c.nombre }}</td>
+            <td>{{ c.telefono }}</td>
+            <td>{{ c.direccion }}</td>
 
-          <td class="acciones">
+            <td class="acciones">
 
-            
+              
 
-            <button
-              class="eliminar"
-              (click)="eliminarCliente(c.id_cliente)"
-            >
-              🗑️
-            </button>
+              <button
+                class="eliminar"
+                (click)="eliminarCliente(c.id_cliente)"
+              >
+                🗑️
+              </button>
 
-          </td>
+            </td>
 
-        </tr>
+          </tr>
 
-      </tbody>
+        </tbody>
 
-    </table>
+      </table>
+    </div>
 
   </div>
 

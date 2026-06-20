@@ -52,19 +52,21 @@ def registrar_accion_crud(
             )
 
 
+from typing import Any, Dict, List, Type, Tuple
+
 def crear_crud_router(
     modelo: Type[SQLModel],
     prefix: str,
-    tags: list[str],
-    campos_pk: tuple[str, ...],
+    tags: List[str],
+    campos_pk: Tuple[str, ...],
     usar_bd_empresa: bool = True,
     proteger: bool = True,
-    roles_listar: tuple[str, ...] = ("Administrador", "Empleado", "Cliente"),
-    roles_crear: tuple[str, ...] = ("Administrador", "Empleado"),
-    roles_actualizar: tuple[str, ...] = ("Administrador", "Empleado"),
-    roles_eliminar: tuple[str, ...] = ("Administrador",),
+    roles_listar: Tuple[str, ...] = ("Administrador", "Empleado", "Cliente"),
+    roles_crear: Tuple[str, ...] = ("Administrador", "Empleado"),
+    roles_actualizar: Tuple[str, ...] = ("Administrador", "Empleado"),
+    roles_eliminar: Tuple[str, ...] = ("Administrador",),
 ):
-    router = APIRouter(prefix=prefix, tags=tags)
+    router = APIRouter(prefix=prefix, tags=tags)  # type: ignore
 
     nombre_ruta = prefix.strip("/").replace("-", "_").replace("/", "_")
 
@@ -180,9 +182,19 @@ def crear_crud_router(
                     detail=f"{modelo.__name__} no encontrado",
                 )
 
+            estado_anterior = None
+            if modelo.__name__ == "Proyecto":
+                estado_anterior = getattr(objeto, "estado", None)
+
             datos_actuales = convertir_a_dict(objeto)
             datos_nuevos = {**datos_actuales, **data}
             datos_nuevos[campo_pk] = item_id
+
+            if modelo.__name__ == "Proyecto":
+                estado_nuevo = datos_nuevos.get("estado")
+                if estado_nuevo == "Finalizado" and estado_anterior != "Finalizado":
+                    from datetime import date
+                    datos_nuevos["fecha_fin"] = date.today().isoformat()
 
             objeto_validado = crear_objeto(modelo, datos_nuevos)
 
@@ -202,6 +214,23 @@ def crear_crud_router(
                     accion="Actualizar",
                     descripcion=f"Se actualizó {modelo.__name__} con ID {item_id}.",
                 )
+
+                if modelo.__name__ == "Proyecto":
+                    estado_nuevo = getattr(objeto, "estado", None)
+                    if estado_anterior != estado_nuevo:
+                        from routers.notificaciones_app import enviar_notificacion_push
+                        from datetime import datetime
+                        fecha_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        nombre_proy = getattr(objeto, "nombre", f"Proyecto #{item_id}")
+                        mensaje = f"Proyecto: {nombre_proy}\nCambió a: {estado_nuevo}\nFecha: {fecha_hora}"
+                        
+                        id_usr = getattr(objeto, "id_usuarios", None)
+                        if id_usr:
+                            enviar_notificacion_push(
+                                id_usuario=id_usr,
+                                titulo="¡Cambio de Estado de Proyecto!",
+                                mensaje=mensaje
+                            )
 
                 return objeto
 

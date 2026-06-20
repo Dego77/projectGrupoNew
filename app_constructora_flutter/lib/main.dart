@@ -4,6 +4,7 @@ import 'package:app_constructora/theme/app_theme.dart';
 import 'package:app_constructora/screens/login_screen.dart';
 import 'package:app_constructora/providers/user_provider.dart';
 
+import 'package:app_constructora/providers/notification_provider.dart';
 import 'package:app_constructora/services/notification_service.dart';
 
 void main() async {
@@ -13,6 +14,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: const MyApp(),
     ),

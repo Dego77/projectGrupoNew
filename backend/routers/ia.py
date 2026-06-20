@@ -58,8 +58,11 @@ class AudioIAResponse(BaseModel):
     respuesta: str
 
 
+from typing import Optional, List, Dict, Any
+
 class PreguntaIAContextoRequest(BaseModel):
     pregunta: str = Field(..., min_length=2)
+    historial: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
 
 
 class PreguntaIAContextoResponse(BaseModel):
@@ -491,7 +494,7 @@ def generar_respuesta_local_de_respaldo(pregunta: str, contexto: str, error_msg:
         return msg
 
 
-def responder_con_contexto_empresa(pregunta: str, session: Session) -> tuple[str, str]:
+def responder_con_contexto_empresa(pregunta: str, session: Session, historial: list = None) -> tuple[str, str]:
     contexto_empresa = construir_contexto_empresa(session)
 
     prompt = f"""
@@ -515,7 +518,7 @@ Pregunta del usuario:
 """
 
     try:
-        respuesta = responder_con_gemini(prompt)
+        respuesta = responder_con_gemini(prompt, historial)
     except Exception as e:
         print(f"Error llamando a Gemini: {e}. Usando respuesta local de respaldo.")
         respuesta = generar_respuesta_local_de_respaldo(pregunta, contexto_empresa, str(e))
@@ -656,6 +659,7 @@ def preguntar_ia_con_contexto(
         contexto_empresa, respuesta = responder_con_contexto_empresa(
             pregunta=datos.pregunta,
             session=session,
+            historial=datos.historial
         )
 
         return {

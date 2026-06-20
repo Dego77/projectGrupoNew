@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ApiService } from '../../services/api';
 
 @Component({
   selector: 'app-perfil-empresa',
@@ -15,6 +16,8 @@ export class PerfilEmpresaComponent implements OnInit {
   adminName = '';
   adminEmail = '';
   logoUrl: string | null = null;
+
+  constructor(private apiService: ApiService) {}
 
   ngOnInit() {
     const empresaStr = localStorage.getItem('empresa');
@@ -56,9 +59,16 @@ export class PerfilEmpresaComponent implements OnInit {
       const reader = new FileReader();
       reader.onload = (e: any) => {
         this.logoUrl = e.target.result;
-        // Save to localStorage so it persists
+        // Save to localStorage so it persists locally
         if (this.empresa && this.empresa.id_empresa) {
           localStorage.setItem('empresa_logo_' + this.empresa.id_empresa, this.logoUrl as string);
+          
+          // Also save it to backend!
+          this.apiService.actualizarLogoEmpresa(this.empresa.id_empresa, this.logoUrl as string)
+            .subscribe({
+              next: (res) => console.log('Logo guardado en backend', res),
+              error: (err) => console.error('Error guardando logo', err)
+            });
         }
       };
       reader.readAsDataURL(file);

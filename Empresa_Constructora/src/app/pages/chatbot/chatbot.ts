@@ -106,6 +106,8 @@ export class ChatbotComponent implements AfterViewChecked {
     return 'Error al conectar con la IA. Intenta de nuevo.';
   }
 
+  historialContexto: any[] = [];
+
   enviarPregunta(){
 
     if(!this.pregunta.trim() || this.cargando) return;
@@ -117,6 +119,11 @@ export class ChatbotComponent implements AfterViewChecked {
       texto: texto
     });
 
+    this.historialContexto.push({
+      rol: 'usuario',
+      mensaje: texto
+    });
+
     this.pregunta = '';
 
     this.cargando = true;
@@ -125,7 +132,7 @@ export class ChatbotComponent implements AfterViewChecked {
     console.log('Enviando pregunta a la IA:', texto);
     console.log('Headers de la petición:', (this.api as any).getHeaders());
 
-    this.api.preguntarIA(texto)
+    this.api.preguntarIA(texto, this.historialContexto)
     .subscribe({
 
       next: (resp:any) => {
@@ -134,6 +141,11 @@ export class ChatbotComponent implements AfterViewChecked {
         this.mensajes.push({
           tipo: 'ia',
           texto: resp.respuesta || 'La IA no generó respuesta.'
+        });
+
+        this.historialContexto.push({
+          rol: 'asistente',
+          mensaje: resp.respuesta
         });
 
         this.cargando = false;

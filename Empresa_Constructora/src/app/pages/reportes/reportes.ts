@@ -15,12 +15,13 @@ import { ChangeDetectorRef } from '@angular/core';
 export class ReportesComponent implements OnInit {
 
   // Control de pestañas
-  activeTab: 'tabular' | 'graficos' = 'tabular';
+  activeTab: 'tabular' | 'graficos' | 'estado_resultados' = 'tabular';
 
   clientes: any[] = [];
   proyectos: any[] = [];
   materiales: any[] = [];
   movimientos: any[] = [];
+  estadoResultados: any = null;
 
   // Resumen financiero
   totalIngresos = 0;
@@ -48,6 +49,19 @@ export class ReportesComponent implements OnInit {
     this.cargarProyectos();
     this.cargarMateriales();
     this.cargarMovimientos();
+    this.cargarEstadoResultados();
+  }
+
+  cargarEstadoResultados(){
+    this.api.obtenerEstadoResultados().subscribe({
+      next: (resp: any) => {
+        this.estadoResultados = resp;
+        this.cd.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Error cargando estado de resultados:', err);
+      }
+    });
   }
 
   cargarClientes(){
@@ -475,6 +489,38 @@ export class ReportesComponent implements OnInit {
       </html>
     `);
     printWindow.document.close();
+  }
+
+  exportarEstadoResultadosExcel() {
+    if (!this.estadoResultados) return;
+    const cabeceras = ['CONCEPTO', 'MONTO (Bs)'];
+    const datos = [
+      ['Ingresos Operativos Totales', this.estadoResultados.ingresos_operativos_bob],
+      ['Inventario Inicial', this.estadoResultados.inventario_inicial_bob],
+      ['(+) Compras de Materiales', this.estadoResultados.compras_totales_bob],
+      ['(-) Inventario Final Valorizado', this.estadoResultados.inventario_final_bob],
+      ['Costo de Ventas Total', `(${this.estadoResultados.costo_de_ventas_bob})`],
+      ['UTILIDAD BRUTA', this.estadoResultados.utilidad_bruta_bob],
+      ['Gastos Generales y Administrativos', this.estadoResultados.gastos_operativos_bob],
+      ['UTILIDAD NETA DEL EJERCICIO', this.estadoResultados.utilidad_neta_bob],
+    ];
+    this.exportarAExcel('Estado de Resultados Consolidado', cabeceras, datos, 'estado_resultados');
+  }
+
+  exportarEstadoResultadosPdf() {
+    if (!this.estadoResultados) return;
+    const cabeceras = ['CONCEPTO', 'MONTO (Bs)'];
+    const datos = [
+      ['Ingresos Operativos Totales', `${Number(this.estadoResultados.ingresos_operativos_bob).toFixed(2)} Bs`],
+      ['Inventario Inicial', `${Number(this.estadoResultados.inventario_inicial_bob).toFixed(2)} Bs`],
+      ['(+) Compras de Materiales', `${Number(this.estadoResultados.compras_totales_bob).toFixed(2)} Bs`],
+      ['(-) Inventario Final Valorizado', `${Number(this.estadoResultados.inventario_final_bob).toFixed(2)} Bs`],
+      ['Costo de Ventas Total', `(${Number(this.estadoResultados.costo_de_ventas_bob).toFixed(2)}) Bs`],
+      ['UTILIDAD BRUTA', `${Number(this.estadoResultados.utilidad_bruta_bob).toFixed(2)} Bs`],
+      ['Gastos Generales y Administrativos', `${Number(this.estadoResultados.gastos_operativos_bob).toFixed(2)} Bs`],
+      ['UTILIDAD NETA DEL EJERCICIO', `${Number(this.estadoResultados.utilidad_neta_bob).toFixed(2)} Bs`],
+    ];
+    this.exportarAPdf('Estado de Resultados Consolidado', cabeceras, datos);
   }
 
 }

@@ -1,4 +1,5 @@
 import os
+import difflib
 from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Header
@@ -22,6 +23,12 @@ router = APIRouter(
     prefix="/login",
     tags=["Login - Multiempresa"]
 )
+
+
+def sugerir_correo_similar(email_ingresado: str, correos_existentes: List[str]) -> Optional[str]:
+    # Buscar similitudes ignorando mayúsculas/minúsculas y espacios
+    similares = difflib.get_close_matches(email_ingresado, correos_existentes, n=1, cutoff=0.85)
+    return similares[0] if similares else None
 
 
 class LoginEmpresaRequest(BaseModel):
@@ -108,9 +115,14 @@ def login_empresa(
     ).first()
 
     if not empresa:
+        correos_db = session.exec(select(Empresa.email)).all()
+        sugerencia = sugerir_correo_similar(email_normalizado, [e.lower() for e in correos_db if e])
+        mensaje = "Credenciales de empresa incorrectas."
+        if sugerencia:
+            mensaje += f" ¿Quisiste decir '{sugerencia}'?"
         raise HTTPException(
             status_code=401,
-            detail="Credenciales de empresa incorrectas."
+            detail=mensaje
         )
 
     if empresa.contrasena != datos.contrasena:
@@ -125,15 +137,22 @@ def login_empresa(
             detail="La empresa no se encuentra activa."
         )
 
+    id_empresa_valido = empresa.id_empresa
+    if id_empresa_valido is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Error de consistencia: La empresa no tiene un ID asignado."
+        )
+
     registrar_login_empresa_en_bitacora(
         session_central=session,
-        id_empresa=empresa.id_empresa,
+        id_empresa=id_empresa_valido,
         descripcion=f"La empresa {empresa.nombre} inició sesión correctamente.",
     )
 
     return {
         "mensaje": "Login de empresa correcto.",
-        "id_empresa": empresa.id_empresa,
+        "id_empresa": id_empresa_valido,
         "nombre_empresa": empresa.nombre,
         "email": empresa.email,
         "id_usuario_admin": 1,
@@ -159,9 +178,14 @@ def login_usuario(
     ).first()
 
     if not usuario:
+        correos_db = session.exec(select(Usuario.email)).all()
+        sugerencia = sugerir_correo_similar(identificador, [e.lower() for e in correos_db if e])
+        mensaje = "Credenciales de usuario incorrectas."
+        if sugerencia:
+            mensaje += f" ¿Quisiste decir '{sugerencia}'?"
         raise HTTPException(
             status_code=401,
-            detail="Credenciales de usuario incorrectas."
+            detail=mensaje
         )
 
     if usuario.contrasena != datos.contrasena:
@@ -178,9 +202,16 @@ def login_usuario(
             detail="El usuario no tiene rol asignado."
         )
 
+    id_usuario_valido = usuario.id_usuarios
+    if id_usuario_valido is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Error interno: El usuario no tiene un ID asignado."
+        )
+
     registrar_bitacora(
         session=session,
-        id_usuario=usuario.id_usuarios,
+        id_usuario=id_usuario_valido,
         modulo="Login Usuario",
         accion="Inicio de sesión",
         descripcion=f"El usuario {usuario.nombresusuario} inició sesión correctamente.",
@@ -189,7 +220,7 @@ def login_usuario(
     return {
         "mensaje": "Login de usuario correcto.",
         "id_empresa": x_empresa_id,
-        "id_usuario": usuario.id_usuarios,
+        "id_usuario": id_usuario_valido,
         "usuario": usuario.nombresusuario,
         "nombres": usuario.nombres,
         "apellido": usuario.apellido,
@@ -219,9 +250,16 @@ def cerrar_sesion(
 
     usuario = usuario_actual["usuario"]
 
+    id_usuario_valido = usuario.id_usuarios
+    if id_usuario_valido is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Error interno: El usuario no tiene un ID asignado."
+        )
+
     registrar_bitacora(
         session=session,
-        id_usuario=usuario.id_usuarios,
+        id_usuario=id_usuario_valido,
         modulo="Login Usuario",
         accion="Cierre de sesión",
         descripcion=f"El usuario {usuario.nombresusuario} cerró sesión correctamente.",
@@ -230,7 +268,7 @@ def cerrar_sesion(
     return {
         "mensaje": "Sesión cerrada correctamente. El cliente debe eliminar los datos de sesión almacenados.",
         "id_empresa": x_empresa_id,
-        "id_usuario": usuario.id_usuarios,
+        "id_usuario": id_usuario_valido,
         "usuario": usuario.nombresusuario,
     }
 
@@ -334,9 +372,14 @@ def login_global(
     ).first()
 
     if not usuario:
+        correos_db = session_central.exec(select(Usuario.email)).all()
+        sugerencia = sugerir_correo_similar(email_normalizado, [e.lower() for e in correos_db if e])
+        mensaje = "Credenciales incorrectas."
+        if sugerencia:
+            mensaje += f" ¿Quisiste decir '{sugerencia}'?"
         raise HTTPException(
             status_code=401,
-            detail="Credenciales incorrectas."
+            detail=mensaje
         )
 
     if usuario.contrasena != datos.contrasena:
@@ -447,13 +490,18 @@ def seleccionar_empresa(
                     detail=f"No se pudo crear el usuario en la base de datos de la empresa: {str(e)}"
                 )
 
+        # Asegurar tipos y fallbacks para evitar alertas del tipado estático
+        telefono_usuario: str = usuario_central.telefono or "SIN_FONO"
+        telefono_cliente: str = usuario_central.telefono or ""
+        direccion_cliente: str = usuario_central.direccion or ""
+
         # Verificar si el cliente ya existe en la tabla de clientes de la empresa
         nombre_completo = f"{usuario_central.nombres} {usuario_central.apellido}".strip()
         cliente_local = session_empresa.exec(
             select(Cliente).where(
                 or_(
                     func.lower(Cliente.nombre) == nombre_completo.lower(),
-                    Cliente.telefono == (usuario_central.telefono or "SIN_FONO")
+                    func.lower(Cliente.telefono) == telefono_usuario.lower()
                 )
             )
         ).first()
@@ -461,8 +509,8 @@ def seleccionar_empresa(
         if not cliente_local:
             cliente_local = Cliente(
                 nombre=nombre_completo,
-                telefono=usuario_central.telefono or "",
-                direccion=usuario_central.direccion or "",
+                telefono=telefono_cliente,
+                direccion=direccion_cliente,
             )
             try:
                 session_empresa.add(cliente_local)
@@ -475,10 +523,17 @@ def seleccionar_empresa(
         rol = session_empresa.get(Rol, usuario_local.id_rol)
         rol_name = rol.rol if rol else "Cliente"
 
+        id_usuario_valido = usuario_local.id_usuarios
+        if id_usuario_valido is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Error interno: El usuario local no tiene un ID asignado."
+            )
+
         return {
             "mensaje": "Login de usuario correcto.",
             "id_empresa": datos.id_empresa,
-            "id_usuario": usuario_local.id_usuarios,
+            "id_usuario": id_usuario_valido,
             "usuario": usuario_local.nombresusuario,
             "nombres": usuario_local.nombres,
             "apellido": usuario_local.apellido,

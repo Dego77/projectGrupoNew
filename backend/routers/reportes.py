@@ -16,6 +16,7 @@ from models import (
     ActivosFijos,
     Usuario,
     Empleados,
+    Compra,
 )
 
 
@@ -273,3 +274,72 @@ def reporte_activos_fijos(
         })
 
     return respuesta
+
+
+class EstadoResultadosResponse(BaseModel):
+    ingresos_operativos_bob: Decimal
+    inventario_inicial_bob: Decimal
+    compras_totales_bob: Decimal
+    inventario_final_bob: Decimal
+    costo_de_ventas_bob: Decimal
+    utilidad_bruta_bob: Decimal
+    gastos_operativos_bob: Decimal
+    utilidad_neta_bob: Decimal
+
+
+@router.get("/estado-resultados", response_model=EstadoResultadosResponse)
+def reporte_estado_resultados(
+    session: Session = Depends(get_session_empresa),
+):
+    # 1. Ingresos Operativos
+    ingresos_operativos = session.exec(
+        select(func.coalesce(func.sum(MovimientoFinanciero.monto), 0))
+        .where(func.lower(MovimientoFinanciero.tipo_movimiento) == "ingreso")
+    ).one()
+
+    # 2. Inventario Inicial (Asumido 0 históricamente)
+    inventario_inicial = Decimal("0.00")
+
+    # 3. Compras Totales
+    compras_totales = session.exec(
+        select(func.coalesce(func.sum(Compra.total), 0))
+    ).one()
+
+    # 4. Inventario Final (Valorizado actual)
+    materiales = session.exec(select(Material)).all()
+    inventario_final = Decimal("0.00")
+    for material in materiales:
+        precio = Decimal(str(material.precio or 0))
+        stock = Decimal(str(material.stock or 0))
+        inventario_final += precio * stock
+
+    # 5. Costo de Ventas
+    costo_de_ventas = inventario_inicial + redondear(compras_totales) - redondear(inventario_final)
+
+    # 6. Utilidad Bruta
+    utilidad_bruta = redondear(ingresos_operativos) - redondear(costo_de_ventas)
+
+    # 7. Gastos Operativos (Egresos totales menos lo que ya se gastó en compras)
+    # Ya que las compras generan egresos, debemos restarlas para no duplicar el gasto
+    egresos_totales = session.exec(
+        select(func.coalesce(func.sum(MovimientoFinanciero.monto), 0))
+        .where(func.lower(MovimientoFinanciero.tipo_movimiento) == "egreso")
+    ).one()
+    
+    gastos_operativos = redondear(egresos_totales) - redondear(compras_totales)
+    if gastos_operativos < 0:
+        gastos_operativos = Decimal("0.00")
+
+    # 8. Utilidad Neta
+    utilidad_neta = utilidad_bruta - gastos_operativos
+
+    return {
+        "ingresos_operativos_bob": redondear(ingresos_operativos),
+        "inventario_inicial_bob": redondear(inventario_inicial),
+        "compras_totales_bob": redondear(compras_totales),
+        "inventario_final_bob": redondear(inventario_final),
+        "costo_de_ventas_bob": redondear(costo_de_ventas),
+        "utilidad_bruta_bob": redondear(utilidad_bruta),
+        "gastos_operativos_bob": redondear(gastos_operativos),
+        "utilidad_neta_bob": redondear(utilidad_neta),
+    }

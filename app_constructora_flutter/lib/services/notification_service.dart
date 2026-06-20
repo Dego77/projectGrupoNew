@@ -4,6 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:app_constructora/core/constants/api_constants.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:app_constructora/providers/notification_provider.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -124,6 +125,10 @@ class NotificationService {
                     title: title,
                     body: message,
                   );
+
+                  // Guardar en el provider de la app
+                  final date = DateTime.now().toString().substring(0, 16);
+                  NotificationProvider().addNotification(title, message, date);
                 }
               } catch (e) {
                 print("[NotificationService] Error decodificando evento SSE: $e");

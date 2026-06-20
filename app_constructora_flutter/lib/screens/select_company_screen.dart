@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app_constructora/theme/app_theme.dart';
@@ -48,6 +49,45 @@ class _SelectCompanyScreenState extends State<SelectCompanyScreen> {
     }
   }
 
+  Widget _buildCompanyLogo(String? logoBase64, bool isSelected) {
+    if (logoBase64 != null && logoBase64.isNotEmpty) {
+      try {
+        final String base64String = logoBase64.contains(',') 
+            ? logoBase64.split(',').last 
+            : logoBase64;
+        return ClipOval(
+          child: Image.memory(
+            base64Decode(base64String),
+            width: 40,
+            height: 40,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => _buildDefaultIcon(isSelected),
+          ),
+        );
+      } catch (e) {
+        return _buildDefaultIcon(isSelected);
+      }
+    }
+    return _buildDefaultIcon(isSelected);
+  }
+
+  Widget _buildDefaultIcon(bool isSelected) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? AppTheme.primaryColor.withOpacity(0.1)
+            : AppTheme.backgroundColor,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        Icons.location_city,
+        color: isSelected ? AppTheme.primaryColor : AppTheme.secondaryColor,
+        size: 24,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
@@ -95,6 +135,7 @@ class _SelectCompanyScreenState extends State<SelectCompanyScreen> {
                           final company = widget.companies[index];
                           final idEmpresa = company['id_empresa'] as int;
                           final nombre = company['nombre'] as String;
+                          final logoBase64 = company['logo'] as String?;
                           final isSelected = _selectedCompanyId == idEmpresa;
 
                           return GestureDetector(
@@ -126,22 +167,9 @@ class _SelectCompanyScreenState extends State<SelectCompanyScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? AppTheme.primaryColor.withOpacity(0.1)
-                                          : AppTheme.backgroundColor,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.location_city,
-                                      color: isSelected
-                                          ? AppTheme.primaryColor
-                                          : AppTheme.secondaryColor,
-                                    ),
-                                  ),
+                                  _buildCompanyLogo(logoBase64, isSelected),
                                   const SizedBox(width: 16),
+
                                   Expanded(
                                     child: Text(
                                       nombre,

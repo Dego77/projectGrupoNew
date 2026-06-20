@@ -16,6 +16,13 @@
     >
       📈 Dashboard Estadístico
     </button>
+    <button 
+      class="tab-btn" 
+      [class.active]="activeTab === 'estado_resultados'"
+      (click)="activeTab = 'estado_resultados'"
+    >
+      📄 Estado de Resultados
+    </button>
   </div>
 
   <!-- PESTAÑA 1: TABLAS DE AUDITORÍA -->
@@ -270,6 +277,103 @@
 
     </div>
 
+  </div>
+
+  <!-- PESTAÑA 3: ESTADO DE RESULTADOS (EXCEL STYLE) -->
+  <div class="tab-content" *ngIf="activeTab === 'estado_resultados'">
+    <div class="card reporte-card">
+      <div class="card-header-actions">
+        <div>
+          <h2>Estado de Resultados (Acumulado Histórico)</h2>
+          <p class="section-desc">Reporte financiero consolidado calculando el costo de ventas en base al inventario final.</p>
+        </div>
+        <div class="export-actions">
+          <button class="btn-export pdf-btn" (click)="exportarEstadoResultadosPdf()">
+            📄 Exportar PDF
+          </button>
+          <button class="btn-export excel-btn" (click)="exportarEstadoResultadosExcel()">
+            🟢 Exportar Excel
+          </button>
+        </div>
+      </div>
+
+      <div class="table-scroll-container" style="background-color: white; padding: 20px;">
+        <div *ngIf="!estadoResultados" style="text-align: center; padding: 40px; color: #64748b;">
+          Cargando datos financieros...
+        </div>
+
+        <table *ngIf="estadoResultados" class="accounting-table" style="width: 100%; max-width: 800px; margin: 0 auto; border-collapse: collapse; font-family: 'Courier New', Courier, monospace; font-size: 14px; border: 1px solid #cbd5e1;">
+          <thead>
+            <tr>
+              <th colspan="2" style="background-color: #0b2c6b; color: white; padding: 12px; text-align: center; font-family: Arial, sans-serif; font-size: 16px;">
+                CONSTRUCTPRO S.A.<br>
+                <span style="font-size: 12px; font-weight: normal;">ESTADO DE RESULTADOS CONSOLIDADO</span>
+              </th>
+            </tr>
+            <tr style="background-color: #f1f5f9; border-bottom: 2px solid #cbd5e1;">
+              <th style="padding: 10px; text-align: left; font-family: Arial, sans-serif;">CONCEPTO</th>
+              <th style="padding: 10px; text-align: right; font-family: Arial, sans-serif; width: 30%;">MONTO (Bs)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Ingresos -->
+            <tr>
+              <td style="padding: 8px 10px;">Ingresos Operativos Totales</td>
+              <td style="padding: 8px 10px; text-align: right;">{{ estadoResultados.ingresos_operativos_bob | number:'1.2-2' }}</td>
+            </tr>
+            
+            <!-- Costo de Ventas Header -->
+            <tr style="background-color: #f8fafc;">
+              <td colspan="2" style="padding: 15px 10px 5px 10px; font-weight: bold; font-family: Arial, sans-serif; color: #475569;">Determinación del Costo de Ventas:</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 10px; padding-left: 30px;">Inventario Inicial</td>
+              <td style="padding: 8px 10px; text-align: right;">{{ estadoResultados.inventario_inicial_bob | number:'1.2-2' }}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 10px; padding-left: 30px;">(+) Compras de Materiales</td>
+              <td style="padding: 8px 10px; text-align: right;">{{ estadoResultados.compras_totales_bob | number:'1.2-2' }}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 10px; padding-left: 30px;">(-) Inventario Final Valorizado</td>
+              <td style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #94a3b8;">{{ estadoResultados.inventario_final_bob | number:'1.2-2' }}</td>
+            </tr>
+            
+            <!-- Costo de Ventas Total -->
+            <tr>
+              <td style="padding: 8px 10px; font-weight: bold; color: #ef4444;">Costo de Ventas Total</td>
+              <td style="padding: 8px 10px; text-align: right; font-weight: bold; color: #ef4444;">({{ estadoResultados.costo_de_ventas_bob | number:'1.2-2' }})</td>
+            </tr>
+            
+            <!-- Utilidad Bruta -->
+            <tr style="background-color: #e2e8f0; border-top: 2px solid #cbd5e1; border-bottom: 2px solid #cbd5e1;">
+              <td style="padding: 12px 10px; font-weight: bold; font-family: Arial, sans-serif; font-size: 15px;">UTILIDAD BRUTA</td>
+              <td style="padding: 12px 10px; text-align: right; font-weight: bold; font-size: 15px;">{{ estadoResultados.utilidad_bruta_bob | number:'1.2-2' }}</td>
+            </tr>
+
+            <!-- Gastos Operativos Header -->
+            <tr style="background-color: #f8fafc;">
+              <td colspan="2" style="padding: 15px 10px 5px 10px; font-weight: bold; font-family: Arial, sans-serif; color: #475569;">Gastos Operativos:</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 10px; padding-left: 30px;">Gastos Generales y Administrativos (Planillas y Otros Egresos)</td>
+              <td style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #94a3b8;">{{ estadoResultados.gastos_operativos_bob | number:'1.2-2' }}</td>
+            </tr>
+            
+            <!-- Utilidad Neta -->
+            <tr style="background-color: #dbeafe; border-top: 2px double #3b82f6; border-bottom: 2px double #3b82f6;">
+              <td style="padding: 15px 10px; font-weight: bold; font-family: Arial, sans-serif; font-size: 16px; color: #1e3a8a;">UTILIDAD NETA DEL EJERCICIO</td>
+              <td style="padding: 15px 10px; text-align: right; font-weight: bold; font-size: 16px; color: #1e3a8a;">{{ estadoResultados.utilidad_neta_bob | number:'1.2-2' }}</td>
+            </tr>
+
+          </tbody>
+        </table>
+        
+        <div style="text-align: center; margin-top: 20px;">
+          <p style="font-size: 12px; color: #94a3b8;">Este reporte es generado automáticamente. El inventario final ha sido calculado al valor de compra de los ítems en stock.</p>
+        </div>
+      </div>
+    </div>
   </div>
 
 </div>

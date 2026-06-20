@@ -87,8 +87,22 @@
 
       <!-- TABLA DE LISTADO -->
       <div class="card list-card">
-        <h2>Listado del Personal Registrado</h2>
-        <p class="section-desc">Lista completa de empleados activos de la empresa constructora.</p>
+        <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 25px; gap: 15px;">
+          <h2 style="align-self: flex-start; margin: 0;">Listado del Personal Registrado</h2>
+          <p class="section-desc" style="align-self: flex-start; margin-top: -10px;">Lista completa de empleados activos de la empresa constructora.</p>
+          
+          <div class="search-container" style="position: relative; width: 550px; max-width: 100%;">
+            <span style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 16px;">🔍</span>
+            <input 
+              type="text" 
+              [(ngModel)]="terminoBusqueda" 
+              placeholder="Buscar por ID, nombre o cargo..."
+              style="width: 100%; padding: 12px 15px 12px 45px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 15px; outline: none; transition: all 0.2s; background: #f8fafc; box-sizing: border-box; box-shadow: 0 2px 5px rgba(0,0,0,0.05);"
+              onfocus="this.style.borderColor='#ff6b3d'; this.style.boxShadow='0 0 0 4px rgba(255, 107, 61, 0.15)';"
+              onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.05)';"
+            >
+          </div>
+        </div>
 
         <div class="table-scroll-container">
           <table>
@@ -103,7 +117,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let e of empleados">
+              <tr *ngFor="let e of empleadosFiltrados">
                 <td style="text-align: center; font-weight: bold; color: #64748b;">{{ e.id_empleados }}</td>
                 <td><strong>{{ e.nombre }}</strong></td>
                 <td><span class="role-pill">{{ e.cargo }}</span></td>
@@ -419,34 +433,36 @@
 
   </div>
 
-  <!-- EDIT MODAL DIALOG (PRESERVADO) -->
+  <!-- EDIT MODAL DIALOG -->
   <div class="modal-overlay" *ngIf="isEditModalOpen">
     <div class="modal-card">
       <h2>Editar Empleado</h2>
       
-      <div class="form-group">
-        <label>Nombre</label>
-        <input type="text" [(ngModel)]="editEmpleadoData.nombre">
-      </div>
+      <div class="formulario">
+        <div class="form-group">
+          <label>Nombre</label>
+          <input type="text" [(ngModel)]="editEmpleadoData.nombre">
+        </div>
 
-      <div class="form-group">
-        <label>Cargo</label>
-        <input type="text" [(ngModel)]="editEmpleadoData.cargo">
-      </div>
+        <div class="form-group">
+          <label>Cargo</label>
+          <input type="text" [(ngModel)]="editEmpleadoData.cargo">
+        </div>
 
-      <div class="form-group">
-        <label>Salario</label>
-        <input type="number" [(ngModel)]="editEmpleadoData.salario">
-      </div>
+        <div class="form-group">
+          <label>Salario</label>
+          <input type="number" [(ngModel)]="editEmpleadoData.salario">
+        </div>
 
-      <div class="form-group">
-        <label>Teléfono</label>
-        <input type="text" [(ngModel)]="editEmpleadoData.telefono">
+        <div class="form-group">
+          <label>Teléfono</label>
+          <input type="text" [(ngModel)]="editEmpleadoData.telefono">
+        </div>
       </div>
 
       <div class="modal-acciones">
-        <button class="guardar" (click)="guardarEdicion()">Guardar Cambios</button>
-        <button class="cancelar" (click)="cerrarModal()">Cancelar</button>
+        <button class="guardar" (click)="guardarEdicion()">✅ Guardar Cambios</button>
+        <button class="cancelar" (click)="cerrarModal()">❌ Cancelar</button>
       </div>
     </div>
   </div>

@@ -27,6 +27,7 @@ export class RrhhComponent implements OnInit {
     telefono: ''
   };
 
+  terminoBusqueda: string = '';
   empleados: any[] = [];
   proyectos: any[] = [];
   selectedProyectoId: number | null = null;
@@ -69,6 +70,22 @@ export class RrhhComponent implements OnInit {
       error: (err) => {
         console.error('Error al cargar empleados:', err);
       }
+    });
+  }
+
+  get empleadosFiltrados() {
+    if (!this.terminoBusqueda) {
+      return this.empleados;
+    }
+    const termino = this.terminoBusqueda.toLowerCase();
+    return this.empleados.filter(e => {
+      const id = e.id_empleados?.toString() || '';
+      const nombre = (e.nombre || '').toLowerCase();
+      const cargo = (e.cargo || '').toLowerCase();
+
+      return id.includes(termino) ||
+             nombre.includes(termino) ||
+             cargo.includes(termino);
     });
   }
 

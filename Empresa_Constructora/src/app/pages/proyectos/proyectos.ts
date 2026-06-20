@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChangeDetectorRef } from '@angular/core';
@@ -14,9 +14,11 @@ import { ApiService } from '../../services/api';
   templateUrl: './proyectos.html',
   styleUrl: './proyectos.scss'
 })
-export class ProyectosComponent implements OnInit {
+export class ProyectosComponent implements OnInit, OnDestroy {
 
   proyectos: any[] = [];
+  terminoBusqueda: string = '';
+  private pollingInterval: any;
   empleados: any[] = [];
   listaIngenieros: any[] = [];
   listaResidentes: any[] = [];
@@ -60,6 +62,17 @@ export class ProyectosComponent implements OnInit {
     this.cargarProyectos();
     this.cargarEmpleados();
 
+    // Optimización: Auto-refrescar la lista cada 3 segundos en segundo plano
+    this.pollingInterval = setInterval(() => {
+      this.cargarProyectosSilencioso();
+    }, 3000);
+
+  }
+
+  ngOnDestroy(): void {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+    }
   }
 
   cargarProyectos(){
@@ -85,6 +98,45 @@ export class ProyectosComponent implements OnInit {
 
     });
 
+  }
+
+  // Versión sin console.log para no llenar la consola durante el auto-refresh
+  cargarProyectosSilencioso(){
+    this.api.obtenerProyectosConEstadoFinanciero()
+    .subscribe({
+      next: (resp:any) => {
+        // Solo actualizamos si hay cambios reales para no interrumpir la interfaz
+        if (JSON.stringify(this.proyectos) !== JSON.stringify(resp)) {
+          this.proyectos = resp;
+          this.cd.detectChanges();
+        }
+      },
+      error: (err) => {
+        // Ignorar errores silenciosos de red
+      }
+    });
+  }
+
+  get proyectosFiltrados() {
+    if (!this.terminoBusqueda) {
+      return this.proyectos;
+    }
+    const termino = this.terminoBusqueda.toLowerCase();
+    return this.proyectos.filter(p => {
+      const id = p.id_proyecto?.toString() || '';
+      const nombre = (p.nombre || '').toLowerCase();
+      const cliente = (p.cliente || '').toLowerCase();
+      const inicio = (p.fecha_inicio || '').toLowerCase();
+      const estadoPago = (p.estado_pago || '').toLowerCase();
+      const estadoProy = (p.estado_proyecto || '').toLowerCase();
+
+      return id.includes(termino) ||
+             nombre.includes(termino) ||
+             cliente.includes(termino) ||
+             inicio.includes(termino) ||
+             estadoPago.includes(termino) ||
+             estadoProy.includes(termino);
+    });
   }
 
   actualizarEstadoProyecto(idProyecto: number, event: any){
