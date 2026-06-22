@@ -165,7 +165,8 @@ INSERT INTO compra (
     id_movimiento,
     id_usuarios,
     fecha,
-    total
+    total,
+    estado
 )
 VALUES (
     1,
@@ -173,7 +174,8 @@ VALUES (
     1,
     1,
     '2026-05-07',
-    1510.00
+    1510.00,
+    'Aprobada'
 )
 ON CONFLICT (id_compra) DO NOTHING;
 
