@@ -466,7 +466,7 @@ class _MyProjectScreenState extends State<MyProjectScreen> {
                   Expanded(
                     child: _buildResourceStat(
                       Icons.fire_truck_outlined,
-                      '0',
+                      '${proyecto?['cant_maquinaria'] ?? 0}',
                       'Maquinaria',
                     ),
                   ),

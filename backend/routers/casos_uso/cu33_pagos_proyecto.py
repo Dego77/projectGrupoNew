@@ -502,6 +502,7 @@ def obtener_detalles_proyecto_cliente(
     proyecto_dict["nom_albaniles"] = nom_albaniles
     proyecto_dict["nom_ayudantes"] = nom_ayudantes
     proyecto_dict["cant_obreros"] = cant_obreros
+    proyecto_dict["cant_maquinaria"] = cant_maquinaria
     proyecto_dict["porcentaje_avance"] = progreso_real
 
     # Fetch documents and photos associated with this project
