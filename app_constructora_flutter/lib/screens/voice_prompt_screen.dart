@@ -399,6 +399,35 @@ class _VoicePromptScreenState extends State<VoicePromptScreen>
                   ),
                   
                 const SizedBox(height: 24),
+                
+                OutlinedButton.icon(
+                  onPressed: () {
+                    _flutterTts.stop();
+                    _navigationTimer?.cancel();
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BudgetScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.edit_note_rounded, color: Color(0xFF0F172A)),
+                  label: const Text(
+                    'Llenar formulario manualmente',
+                    style: TextStyle(
+                      color: Color(0xFF0F172A),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: const BorderSide(color: Color(0xFF0F172A), width: 2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

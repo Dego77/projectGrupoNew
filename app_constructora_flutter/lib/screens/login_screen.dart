@@ -16,8 +16,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(text: 'admin@gmail.com');
-  final _passwordController = TextEditingController(text: '12345');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   Future<void> _login() async {
     final email = _emailController.text.trim();
@@ -32,24 +32,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!Validators.isValidEmail(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, ingresa un correo electrónico válido')),
+        const SnackBar(
+          content: Text('Por favor, ingresa un correo electrónico válido'),
+        ),
       );
       return;
     }
 
     try {
       // Intentar login global
-      final response = await context.read<UserProvider>().loginGlobal(email, password);
+      final response = await context.read<UserProvider>().loginGlobal(
+        email,
+        password,
+      );
       final list = response['empresas'] as List<dynamic>;
 
       if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => SelectCompanyScreen(
-              companies: list,
-              email: email,
-            ),
+            builder: (context) =>
+                SelectCompanyScreen(companies: list, email: email),
           ),
         );
       }
@@ -83,25 +86,58 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 Image.asset(
                   'assets/images/login.png',
-                  height: 200, // Un poco más grande para compensar el espacio del icono
+                  height:
+                      200, // Un poco más grande para compensar el espacio del icono
                   fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 32),
-                
-                Text('Bienvenido', style: Theme.of(context).textTheme.displayMedium?.copyWith(color: AppTheme.textPrimaryColor), textAlign: TextAlign.center),
+
+                Text(
+                  'Bienvenido',
+                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                    color: AppTheme.textPrimaryColor,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 8),
-                Text('Ingresa a tu cuenta para gestionar tu obra', style: Theme.of(context).textTheme.bodyMedium, textAlign: TextAlign.center),
+                Text(
+                  'Ingresa a tu cuenta para gestionar tu obra',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 48),
 
-                TextField(controller: _emailController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Correo Electrónico', prefixIcon: Icon(Icons.email_outlined))),
+                TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Correo Electrónico',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                ),
                 const SizedBox(height: 16),
-                TextField(controller: _passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'Contraseña', prefixIcon: Icon(Icons.lock_outline))),
+                TextField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Contraseña',
+                    prefixIcon: Icon(Icons.lock_outline),
+                  ),
+                ),
                 const SizedBox(height: 16),
 
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ForgotPasswordScreen())), child: const Text('¿Olvidaste tu contraseña?')),
+                    TextButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ForgotPasswordScreen(),
+                        ),
+                      ),
+                      child: const Text('¿Olvidaste tu contraseña?'),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 32),
@@ -110,9 +146,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   builder: (context, userProvider, child) {
                     return ElevatedButton(
                       onPressed: userProvider.isLoading ? null : _login,
-                      child: userProvider.isLoading 
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('Iniciar Sesión'),
+                      child: userProvider.isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Iniciar Sesión'),
                     );
                   },
                 ),
@@ -122,7 +165,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text('¿No tienes cuenta? '),
-                    TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterScreen())), child: const Text('Regístrate aquí')),
+                    TextButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RegisterScreen(),
+                        ),
+                      ),
+                      child: const Text('Regístrate aquí'),
+                    ),
                   ],
                 ),
               ],

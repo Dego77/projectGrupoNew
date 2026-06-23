@@ -485,6 +485,13 @@ def obtener_detalles_proyecto_cliente(
 
     cant_obreros = len(id_albaniles_list) + len(id_ayudantes_list)
 
+    # Conteo de maquinaria asignada
+    from models import ActivosFijos
+    cant_maquinaria = len(session.exec(
+        select(ActivosFijos)
+        .where(ActivosFijos.id_proyecto == proyecto.id_proyecto)
+    ).all())
+
     # Fetch latest progress from AvanceProyecto
     from models import AvanceProyecto, DocumentoProyecto, AvanceFoto
     latest_avance = session.exec(
