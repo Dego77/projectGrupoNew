@@ -480,7 +480,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Plan configurado y proyecto iniciado con éxito!'),
+                                content: Text('Plan de pagos configurado. Realice el pago de la reserva a continuación para iniciar la obra.'),
                                 backgroundColor: Colors.green,
                               ),
                             );
@@ -701,32 +701,8 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                                     : 'Pendiente',
                                 amount: '\$${montoCuota.toStringAsFixed(2)} USD\n(Bs. ${(montoCuota * 6.96).toStringAsFixed(2)})',
                                 isPaid: isPaid,
-                                onPay: () async {
-                                  setState(() => _processingPayment = true);
-                                  try {
-                                    await context.read<UserProvider>().pagarCuota(p['id_pago']);
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Pago de "${p['metodo_pago']}" procesado con éxito!'),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Error al procesar el pago: $e'),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
-                                  } finally {
-                                    if (mounted) {
-                                      setState(() => _processingPayment = false);
-                                    }
-                                  }
+                                onPay: () {
+                                  _mostrarDialogoStripe(context, p['id_pago'], p['metodo_pago'] ?? 'Cuota', montoCuota);
                                 },
                               );
                             },
@@ -1104,11 +1080,11 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                           child: ElevatedButton(
                             onPressed: _processingPayment ? null : onPay,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
+                              backgroundColor: const Color(0xFF635BFF), // Stripe Blurple
                               padding: const EdgeInsets.symmetric(horizontal: 10),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            child: const Text('Pagar', style: TextStyle(fontSize: 11)),
+                            child: const Text('Stripe', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -1133,6 +1109,210 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
           )
         ],
       ),
+    );
+  }
+
+  void _mostrarDialogoStripe(BuildContext context, int idPago, String cuotaNombre, double monto) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        bool cargando = true;
+        bool procesando = false;
+        String? errorMsg;
+        Map<String, dynamic>? intentData;
+
+        // Controladores para el formulario de tarjeta de crédito
+        final cardController = TextEditingController(text: "4242 4242 4242 4242");
+        final expController = TextEditingController(text: "12/28");
+        final cvcController = TextEditingController(text: "242");
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            if (cargando && errorMsg == null && intentData == null) {
+              context.read<UserProvider>().crearIntentoPagoStripe(monto, idPago: idPago).then((data) {
+                setDialogState(() {
+                  intentData = data;
+                  cargando = false;
+                });
+              }).catchError((err) {
+                setDialogState(() {
+                  errorMsg = err.toString();
+                  cargando = false;
+                });
+              });
+            }
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [
+                  const Icon(Icons.payment, color: Color(0xFF635BFF)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Stripe Checkout - $cuotaNombre',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(dialogContext),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (cargando) ...[
+                      const SizedBox(height: 40),
+                      const CircularProgressIndicator(color: Color(0xFF635BFF)),
+                      const SizedBox(height: 16),
+                      const Text('Iniciando pago seguro...', style: TextStyle(color: Colors.grey)),
+                      const SizedBox(height: 40),
+                    ] else if (errorMsg != null) ...[
+                      const Icon(Icons.error_outline, color: Colors.red, size: 50),
+                      const SizedBox(height: 16),
+                      Text(errorMsg!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                      const SizedBox(height: 16),
+                    ] else ...[
+                      Text(
+                        'Monto a pagar: \$${monto.toStringAsFixed(2)} USD (Bs. ${(monto * 6.96).toStringAsFixed(2)})',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF635BFF)),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 20),
+                      // Formulario de tarjeta de Stripe
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Número de Tarjeta (Stripe Test)', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: cardController,
+                              decoration: const InputDecoration(
+                                hintText: '4242 4242 4242 4242',
+                                suffixIcon: Icon(Icons.credit_card, color: Colors.grey),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Expira', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+                                      const SizedBox(height: 6),
+                                      TextField(
+                                        controller: expController,
+                                        decoration: const InputDecoration(
+                                          hintText: 'MM/AA',
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        keyboardType: TextInputType.datetime,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('CVC', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+                                      const SizedBox(height: 6),
+                                      TextField(
+                                        controller: cvcController,
+                                        decoration: const InputDecoration(
+                                          hintText: '123',
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.lock, size: 14, color: Colors.grey),
+                          SizedBox(width: 6),
+                          Text('Pagos encriptados y procesados por Stripe', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                if (intentData != null)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: procesando
+                          ? null
+                          : () async {
+                              setDialogState(() => procesando = true);
+                              try {
+                                // Llamamos al backend para verificar e impactar el estado del proyecto
+                                await context.read<UserProvider>().confirmarPagoStripe(intentData!['stripe_payment_intent_id']);
+                                if (dialogContext.mounted) {
+                                  Navigator.pop(dialogContext);
+                                }
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('¡Pago aprobado por Stripe! Proyecto en construcción.'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                setDialogState(() {
+                                  errorMsg = e.toString();
+                                  procesando = false;
+                                });
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF635BFF),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: procesando
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          : const Text('Pagar con Tarjeta (Seguro)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

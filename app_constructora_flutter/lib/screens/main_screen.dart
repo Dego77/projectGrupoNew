@@ -9,8 +9,9 @@ import 'package:app_constructora/screens/profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialIndex;
+  static final GlobalKey<MainScreenState> globalKey = GlobalKey<MainScreenState>();
 
-  const MainScreen({super.key, this.initialIndex = 0});
+  MainScreen({Key? key, this.initialIndex = 0}) : super(key: key ?? globalKey);
 
   @override
   State<MainScreen> createState() => MainScreenState();

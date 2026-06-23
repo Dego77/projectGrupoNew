@@ -5,6 +5,10 @@ import 'package:http/http.dart' as http;
 import 'package:app_constructora/core/constants/api_constants.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_constructora/providers/notification_provider.dart';
+import 'package:app_constructora/providers/user_provider.dart';
+import 'package:app_constructora/screens/main_screen.dart';
+import 'package:app_constructora/main.dart';
+import 'package:provider/provider.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -33,6 +37,14 @@ class NotificationService {
 
     await _notificationsPlugin.initialize(
       settings: initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        // Redirigir automáticamente al panel de pagos (Index 3) al hacer clic en la notificación
+        try {
+          MainScreen.globalKey.currentState?.onItemTapped(3);
+        } catch (e) {
+          print("[NotificationService] Error redireccionando al panel de pagos: $e");
+        }
+      },
     );
     _isInitialized = true;
     print("[NotificationService] Inicializado correctamente.");
@@ -90,7 +102,8 @@ class NotificationService {
 
   Future<void> _listenLoop(int idUsuario) async {
     while (_shouldListen && _currentUserId == idUsuario) {
-      _sseClient = http.Client();
+      final client = http.Client();
+      _sseClient = client;
       final url = Uri.parse('${ApiConstants.baseUrl}/notificaciones/stream/$idUsuario');
       print("[NotificationService] Conectando a stream de notificaciones SSE: $url");
       
@@ -99,7 +112,7 @@ class NotificationService {
         request.headers["Accept"] = "text/event-stream";
         request.headers["Cache-Control"] = "no-cache";
         
-        final response = await _sseClient!.send(request);
+        final response = await client.send(request);
         
         if (response.statusCode == 200) {
           print("[NotificationService] Stream SSE abierto exitosamente.");
@@ -129,6 +142,21 @@ class NotificationService {
                   // Guardar en el provider de la app
                   final date = DateTime.now().toString().substring(0, 16);
                   NotificationProvider().addNotification(title, message, date);
+
+                  // Recargar de forma proactiva la información del proyecto y pagos en UserProvider
+                  try {
+                    final context = navigatorKey.currentContext;
+                    if (context != null) {
+                      await Provider.of<UserProvider>(context, listen: false).cargarProyectoYPagos();
+                      
+                      // Si el proyecto cambió al estado 'En planificación', redirigir automáticamente al panel de pagos
+                      if (message.toLowerCase().contains("planific") || title.toLowerCase().contains("planific")) {
+                        MainScreen.globalKey.currentState?.onItemTapped(3);
+                      }
+                    }
+                  } catch (e) {
+                    print("[NotificationService] No se pudo auto-recargar el UserProvider: $e");
+                  }
                 }
               } catch (e) {
                 print("[NotificationService] Error decodificando evento SSE: $e");
@@ -141,7 +169,10 @@ class NotificationService {
       } catch (e) {
         print("[NotificationService] Error de conexión en el stream de notificaciones: $e");
       } finally {
-        _sseClient?.close();
+        client.close();
+        if (_sseClient == client) {
+          _sseClient = null;
+        }
       }
       
       // Esperar 5 segundos antes de intentar reconectar

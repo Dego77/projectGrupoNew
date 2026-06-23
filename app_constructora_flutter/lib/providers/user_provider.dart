@@ -493,6 +493,70 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>> crearIntentoPagoStripe(double monto, {int? idPago}) async {
+    try {
+      final url = Uri.parse('${ApiConstants.baseUrl}/pagos-stripe/crear-intento');
+      final prefs = await SharedPreferences.getInstance();
+      final int idUsuario = prefs.getInt('id_usuario') ?? 1;
+      final int idEmpresa = prefs.getInt('id_empresa') ?? int.parse(Environment.empresaId);
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Empresa-Id': idEmpresa.toString(),
+          'X-Usuario-Id': idUsuario.toString(),
+        },
+        body: json.encode({
+          'id_proyecto': _idProyectoSeleccionado,
+          'monto': monto,
+          if (idPago != null) 'id_pago': idPago,
+        }),
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        final decoded = json.decode(response.body);
+        throw Exception(decoded['detail'] ?? 'Error al crear intento de pago con Stripe.');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> confirmarPagoStripe(String stripePaymentIntentId) async {
+    try {
+      final url = Uri.parse('${ApiConstants.baseUrl}/pagos-stripe/confirmar');
+      final prefs = await SharedPreferences.getInstance();
+      final int idUsuario = prefs.getInt('id_usuario') ?? 1;
+      final int idEmpresa = prefs.getInt('id_empresa') ?? int.parse(Environment.empresaId);
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Empresa-Id': idEmpresa.toString(),
+          'X-Usuario-Id': idUsuario.toString(),
+        },
+        body: json.encode({
+          'id_proyecto': _idProyectoSeleccionado,
+          'stripe_payment_intent_id': stripePaymentIntentId,
+        }),
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        await cargarProyectoYPagos();
+        return json.decode(response.body);
+      } else {
+        final decoded = json.decode(response.body);
+        throw Exception(decoded['detail'] ?? 'Error al confirmar pago de Stripe.');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Simular pago de reserva exitoso
   void payReservation() {
     _pendingReservation = false;

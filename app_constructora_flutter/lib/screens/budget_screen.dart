@@ -180,25 +180,38 @@ class _BudgetScreenState extends State<BudgetScreen> {
                                       await userProvider.subirArchivoProyecto(path, type);
                                     }
                                   }
-                                  // Recargar datos finales del proyecto
-                                  await userProvider.cargarProyectoYPagos();
                                 }
 
-                                // Éxito
+                                if (context.mounted) {
+                                  // Recargar de forma proactiva la información del proyecto y pagos en UserProvider
+                                  await context.read<UserProvider>().cargarProyectoYPagos();
+                                }
+
+                                // Éxito: cerrar el modal
                                 if (modalContext.mounted) {
                                   Navigator.pop(modalContext); // Cierra modal
                                 }
                                 
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Cotización y archivos guardados exitosamente.'), backgroundColor: Colors.green),
+                                    const SnackBar(
+                                      content: Text('Su cotización ha sido enviada para su posterior verificación.'),
+                                      backgroundColor: Colors.green,
+                                      duration: Duration(seconds: 4),
+                                    ),
                                   );
-                                  // Redirigir a pestaña Pagos
-                                  context.findAncestorStateOfType<MainScreenState>()?.onItemTapped(3);
+
+                                  // Regresar a la pantalla principal de navegación de forma segura
+                                  if (Navigator.of(context).canPop()) {
+                                    Navigator.of(context).popUntil((route) => route.isFirst);
+                                  }
+                                  
+                                  // Cambiar a pestaña Inicio (Index 0)
+                                  MainScreen.globalKey.currentState?.onItemTapped(0);
                                 }
                               } catch (e) {
-                                setModalState(() => guardando = false);
                                 if (modalContext.mounted) {
+                                  setModalState(() => guardando = false);
                                   Navigator.pop(modalContext);
                                 }
                                 if (context.mounted) {

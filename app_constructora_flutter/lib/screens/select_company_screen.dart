@@ -34,7 +34,7 @@ class _SelectCompanyScreenState extends State<SelectCompanyScreen> {
       if (success && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
+          MaterialPageRoute(builder: (context) => MainScreen()),
         );
       }
     } catch (e) {

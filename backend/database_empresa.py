@@ -102,6 +102,7 @@ def crear_tablas_empresa(database_url: str):
             conn.execute(text("ALTER TABLE proyecto ADD COLUMN IF NOT EXISTS id_albaniles INTEGER[];"))
             conn.execute(text("ALTER TABLE proyecto ADD COLUMN IF NOT EXISTS id_ayudantes INTEGER[];"))
             conn.execute(text("ALTER TABLE compra ADD COLUMN IF NOT EXISTS estado VARCHAR(255) DEFAULT 'Aprobada';"))
+            conn.execute(text("ALTER TABLE pago ADD COLUMN IF NOT EXISTS stripe_payment_intent_id VARCHAR(255);"))
             conn.commit()
         except Exception as e:
             # Ignorar si ya existe o falla

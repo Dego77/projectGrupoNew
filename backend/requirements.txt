@@ -11,3 +11,4 @@ pydantic
 google-genai
 firebase-admin
 passlib
+stripe

@@ -6,6 +6,7 @@ import 'package:app_constructora/core/constants/api_constants.dart';
 import 'dart:math';
 import 'package:file_picker/file_picker.dart';
 import 'package:app_constructora/screens/custom_camera_screen.dart';
+import 'package:app_constructora/screens/main_screen.dart';
 
 class MyProjectScreen extends StatefulWidget {
   const MyProjectScreen({super.key});
@@ -164,6 +165,117 @@ class _MyProjectScreenState extends State<MyProjectScreen> {
                   onPressed: () => context.read<UserProvider>().cargarProyectoYPagos(),
                   icon: const Icon(Icons.sync),
                   label: const Text('Actualizar Estado'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (estadoProyecto == 'En planificación' || estadoProyecto == 'Planificación') {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Mi Obra'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Actualizar',
+              onPressed: () => context.read<UserProvider>().cargarProyectoYPagos(),
+            ),
+          ],
+        ),
+        body: RefreshIndicator(
+          onRefresh: () => context.read<UserProvider>().cargarProyectoYPagos(),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Selector de proyecto si tiene más de uno
+                if (userProvider.misProyectosReales.length > 1) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.swap_horiz, color: AppTheme.primaryColor),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Proyecto: ',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<int>(
+                              value: userProvider.idProyectoSeleccionado,
+                              isExpanded: true,
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 15),
+                              items: userProvider.misProyectosReales.map((p) {
+                                return DropdownMenuItem<int>(
+                                  value: p['id_proyecto'],
+                                  child: Text(p['nombre'] ?? 'Proyecto'),
+                                );
+                              }).toList(),
+                              onChanged: (id) {
+                                if (id != null) {
+                                  userProvider.seleccionarProyecto(id);
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.architecture_rounded, size: 80, color: Colors.blue.shade800),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Proyecto en Planificación',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'El plan de pagos de tu obra ha sido establecido. Para iniciar la fase de construcción y asignar personal al sitio, realiza el pago de la reserva en la pestaña de "Pagos".',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Redirigir de forma segura a la pestaña de Pagos (Index 3)
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    }
+                    MainScreen.globalKey.currentState?.onItemTapped(3);
+                  },
+                  icon: const Icon(Icons.payment_rounded),
+                  label: const Text('Ir a Pagos'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

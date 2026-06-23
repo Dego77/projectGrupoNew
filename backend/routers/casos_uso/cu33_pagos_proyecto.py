@@ -265,53 +265,24 @@ def establecer_plan_pagos(
     total = Decimal(str(cotizacion.costo_estimado))
 
     if datos.tipo_plan == "directo":
-        # Registrar movimiento financiero
-        movimiento = MovimientoFinanciero(
-            id_proyecto=proyecto.id_proyecto,
-            tipo_movimiento="Ingreso",
-            categoria="Pago de proyecto",
-            monto=total,
-            fecha=datetime.utcnow().date(),
-            descripcion=f"Pago Directo Completo (100%) para el proyecto ID {proyecto.id_proyecto}"
-        )
-        session.add(movimiento)
-        session.commit()
-        session.refresh(movimiento)
-
         pago = Pago(
             id_proyecto=proyecto.id_proyecto,
-            id_movimiento=movimiento.id_movimiento,
             metodo_pago="Pago Directo",
             monto=total,
             fecha=datetime.utcnow(),
-            estado="Completado",
-            codigo_transaccion=f"TX-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+            estado="Pendiente"
         )
         session.add(pago)
     else:
-        # 1. 5% Reserva (Se paga automáticamente al iniciar)
+        # 1. 5% Reserva
         reserva = redondear(total * Decimal("0.05"))
         
-        movimiento_reserva = MovimientoFinanciero(
-            id_proyecto=proyecto.id_proyecto,
-            tipo_movimiento="Ingreso",
-            categoria="Pago de proyecto",
-            monto=reserva,
-            fecha=datetime.utcnow().date(),
-            descripcion=f"Pago de Reserva Inicial (5%) para el proyecto ID {proyecto.id_proyecto}"
-        )
-        session.add(movimiento_reserva)
-        session.commit()
-        session.refresh(movimiento_reserva)
-
         pago_reserva = Pago(
             id_proyecto=proyecto.id_proyecto,
-            id_movimiento=movimiento_reserva.id_movimiento,
             metodo_pago="Reserva (5%)",
             monto=reserva,
             fecha=datetime.utcnow(),
-            estado="Completado",
-            codigo_transaccion=f"TX-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+            estado="Pendiente"
         )
         session.add(pago_reserva)
 

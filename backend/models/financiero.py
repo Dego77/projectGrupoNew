@@ -28,3 +28,4 @@ class Pago(SQLModel, table=True):
     fecha: Optional[datetime] = None
     estado: str = "Pendiente"
     codigo_transaccion: Optional[str] = None
+    stripe_payment_intent_id: Optional[str] = Field(default=None)

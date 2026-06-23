@@ -18,6 +18,7 @@ from .avances import router as avances_router
 from .documentos import router as documentos_router
 from .cotizaciones import router as cotizaciones_router
 from .notificaciones_app import router as notificaciones_app_router
+from .stripe_router import router as stripe_router
 
 
 def incluir_routers(app):
@@ -36,7 +37,8 @@ def incluir_routers(app):
             avances_router,
             documentos_router,
             cotizaciones_router,
-            notificaciones_app_router
+            notificaciones_app_router,
+            stripe_router
         ]
 
         + sistema_routers

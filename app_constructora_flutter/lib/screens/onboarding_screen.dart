@@ -27,7 +27,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     } else {
       await context.read<UserProvider>().loginAsNewUser();
       if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainScreen()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MainScreen()));
       }
     }
   }

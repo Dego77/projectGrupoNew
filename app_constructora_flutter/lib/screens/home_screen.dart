@@ -62,7 +62,7 @@ class HomeScreen extends StatelessWidget {
     String cuotaFecha = 'No hay cuotas';
     String cuotaMonto = 'Al día';
     if (proximaCuota != null) {
-      final double montoCuota = (proximaCuota['monto'] as num).toDouble();
+      final double montoCuota = double.tryParse(proximaCuota['monto']?.toString() ?? '') ?? 0.0;
       cuotaFecha = proximaCuota['fecha'] != null
           ? proximaCuota['fecha'].toString().substring(0, 10)
           : 'Pendiente';
